@@ -1,7 +1,7 @@
 /* Service worker — carte des champignons.
    Incrémente VERSION à chaque modification d'un fichier précaché. */
 
-const VERSION = "v5";
+const VERSION = "v6";
 const SHELL = "champi-shell-" + VERSION;
 const RUNTIME = "champi-runtime-" + VERSION;
 const DATA = "champi-data-" + VERSION;
@@ -130,6 +130,13 @@ self.addEventListener("fetch", (e) => {
   /* Polices et Leaflet : versionnés dans leur URL, donc figés. */
   if (CDN.indexOf(url.hostname) !== -1) {
     e.respondWith(cacheDAbord(req, RUNTIME));
+    return;
+  }
+
+  /* Requêtes WFS : la bbox change sans arrêt, elles n'ont pas leur place
+     dans le cache de tuiles. Dernière réponse connue en secours. */
+  if (url.hostname === GEO && url.pathname.indexOf("/wfs") === 0) {
+    e.respondWith(reseauDAbord(req, DATA));
     return;
   }
 
