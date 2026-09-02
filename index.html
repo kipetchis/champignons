@@ -13,6 +13,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Champignons">
 <meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://data.geopf.fr">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -128,6 +131,11 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .credit{font-size:13px;color:var(--ink-3);margin-top:22px}
 .credit a{color:inherit}
 
+.carte{height:430px;width:100%;border:1px solid var(--line);border-radius:4px;margin:4px 0 10px;background:var(--card);z-index:0}
+.pin span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--on-s);border:2px solid #FBFAF6;box-shadow:0 1px 5px rgba(0,0,0,.4)}
+.pin.on span{border-color:#1D231C;border-width:3px;transform:scale(1.18)}
+.leaflet-container{font-family:var(--sans);border-radius:4px}
+
 .filtre{margin:0 0 20px}
 .filtre-tete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
 .filtre-titre{font-size:13px;font-weight:600;color:var(--ink-3)}
@@ -177,15 +185,7 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
   <div class="chips" id="chips"></div>
 </div>
 
-<svg class="map" viewBox="0 0 380 288" role="img" aria-labelledby="mapTitle mapDesc">
-<title id="mapTitle">Carte des Deux-Sèvres et de la Vienne</title>
-<desc id="mapDesc">Contour schématique des deux départements avec treize secteurs numérotés, colorés du rouge au vert selon les chances de trouver des champignons.</desc>
-<path d="M57,51 L85,43 L128,55 L149,72 L156,102 L163,139 L171,168 L178,199 L185,225 L180,254 L142,246 L107,234 L78,217 L53,209 L62,176 L76,152 L56,123 L42,90 L47,63 Z" fill="var(--card)" stroke="var(--line-2)" stroke-width="1"/>
-<path d="M177,45 L208,53 L242,70 L267,86 L278,115 L306,135 L323,164 L312,192 L284,225 L264,250 L233,246 L205,250 L185,225 L178,199 L171,168 L163,139 L156,102 L149,72 Z" fill="var(--card)" stroke="var(--line-2)" stroke-width="1"/>
-<text class="dept" x="95" y="278" text-anchor="middle">Deux-Sèvres</text>
-<text class="dept" x="265" y="278" text-anchor="middle">Vienne</text>
-<g id="marks"></g>
-</svg>
+<div class="carte" id="carte" role="application" aria-label="Carte des secteurs de prospection"></div>
 
 <div class="legend" id="legend"></div>
 <p class="legend-note" id="legendNote"></p>
@@ -203,7 +203,7 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
   <p><strong>Cette carte ne détermine rien.</strong> Les mentions de confusion signalent les sosies dangereux les plus fréquents, elles ne remplacent pas une identification. Fais valider ta cueillette par un pharmacien avant de manger quoi que ce soit.</p>
   <p>Les poussées arrivent huit à quinze jours après la pluie : un cumul qui vient de monter annonce une sortie à venir, pas une sortie du jour.</p>
   <p>En forêt privée, la cueillette demande l'accord du propriétaire. La réserve biologique de Chizé est fermée à la cueillette.</p>
-  <p class="credit">Pluviométrie : <a href="https://open-meteo.com/">Open-Meteo</a>, relevé par secteur. Contours départementaux schématiques.</p>
+  <p class="credit">Pluviométrie : <a href="https://open-meteo.com/">Open-Meteo</a>, relevé par secteur. Fonds de carte et BD Forêt® V2 : <a href="https://geoservices.ign.fr/">IGN / Géoplateforme</a>, Licence ouverte. Les pastilles marquent un secteur, pas une parcelle précise.</p>
 </section>
 
 </div>
@@ -363,7 +363,6 @@ var elPluie = document.getElementById("pluie");
 var elPluieOut = document.getElementById("pluieOut");
 var elReset = document.getElementById("reset");
 var elStatus = document.getElementById("status");
-var elMarks = document.getElementById("marks");
 var elLegend = document.getElementById("legend");
 var elLegendNote = document.getElementById("legendNote");
 var elPanel = document.getElementById("panel");
@@ -371,6 +370,8 @@ var elRank = document.getElementById("rank");
 var elRankTitre = document.getElementById("rankTitre");
 var elRankSous = document.getElementById("rankSous");
 
+var carte = null;
+var pins = [];
 var releves = null;
 var horodatage = 0;
 var manuel = false;
@@ -466,6 +467,59 @@ function listeEspeces(i, mois){
   return out.slice(0, 10);
 }
 
+function initCarte(){
+  carte = L.map("carte", { scrollWheelZoom: false, zoomControl: true });
+
+  var wmts = "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile" +
+             "&TILEMATRIXSET=PM&STYLE=normal&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}";
+  var ign = "© <a href=\"https://www.ign.fr/\">IGN</a> / Géoplateforme";
+
+  var plan = L.tileLayer(wmts + "&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",
+                         { maxZoom: 18, attribution: ign });
+  var photo = L.tileLayer(wmts + "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg",
+                          { maxZoom: 19, attribution: ign });
+
+  /* BD Forêt V2 : chaque peuplement de plus d'un demi-hectare,
+     avec son essence dominante. */
+  var foret = L.tileLayer.wms("https://data.geopf.fr/wms-r", {
+    layers: "LANDCOVER.FORESTINVENTORY.V2",
+    format: "image/png",
+    transparent: true,
+    version: "1.3.0",
+    opacity: 0.55,
+    maxZoom: 19,
+    attribution: "BD Forêt® V2 © IGN"
+  });
+
+  plan.addTo(carte);
+  foret.addTo(carte);
+
+  L.control.layers(
+    { "Plan IGN": plan, "Photo aérienne": photo },
+    { "BD Forêt V2 (essences)": foret },
+    { collapsed: true }
+  ).addTo(carte);
+
+  carte.fitBounds([[46.02, -0.90], [47.12, 1.18]]);
+}
+
+function majPins(scores){
+  for (var p = 0; p < pins.length; p++) carte.removeLayer(pins[p]);
+  pins = [];
+  for (var i = 0; i < Z.length; i++){
+    var icone = L.divIcon({
+      className: "pin" + (i === sel ? " on" : ""),
+      html: '<span style="background:' + css(NIV[niveau(scores[i])].v) + '">' + (i + 1) + '</span>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    var m = L.marker([Z[i].lat, Z[i].lon], { icon: icone, title: Z[i].n, riseOnHover: true });
+    (function(k){ m.on("click", function(){ sel = k; dessine(); }); })(i);
+    m.addTo(carte);
+    pins.push(m);
+  }
+}
+
 function dessine(){
   var mois = +elMois.value;
   var nb = choix.length;
@@ -476,27 +530,7 @@ function dessine(){
   elPluieOut.textContent = elPluie.value + " mm";
   elReset.hidden = !manuel || !releves;
 
-  var svg = "";
-  for (var i = 0; i < Z.length; i++){
-    var c = css(NIV[niveau(scores[i])].v);
-    var r = (i === sel) ? 12 : 9.5;
-    svg += '<g class="mk" data-i="' + i + '" tabindex="0" role="button" aria-label="' + Z[i].n + '">' +
-           '<circle cx="' + Z[i].x + '" cy="' + Z[i].y + '" r="' + r + '" fill="' + c +
-           '" stroke="' + (i === sel ? css("--ink") : css("--card")) + '" stroke-width="' + (i === sel ? 2 : 1.5) + '"/>' +
-           '<text x="' + Z[i].x + '" y="' + (Z[i].y + 4) + '" text-anchor="middle" fill="' + css("--on-s") + '">' + (i + 1) + '</text>' +
-           '</g>';
-  }
-  elMarks.innerHTML = svg;
-
-  var noeuds = elMarks.querySelectorAll(".mk");
-  for (var k = 0; k < noeuds.length; k++){
-    (function(g){
-      g.addEventListener("click", function(){ sel = +g.dataset.i; dessine(); });
-      g.addEventListener("keydown", function(e){
-        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); sel = +g.dataset.i; dessine(); }
-      });
-    })(noeuds[k]);
-  }
+  majPins(scores);
 
   elLegend.innerHTML = NIV.map(function(n){
     return '<span><i class="dot" style="background:' + css(n.v) + '"></i>' + n.l + '</span>';
@@ -640,6 +674,7 @@ function charge(force){
 }
 
 puces();
+initCarte();
 
 for (var m = 0; m < 12; m++){
   var om = document.createElement("option");
