@@ -131,6 +131,14 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .credit{font-size:13px;color:var(--ink-3);margin-top:22px}
 .credit a{color:inherit}
 
+.bascule{display:flex;align-items:center;gap:9px;font-size:14px;color:var(--ink-2);cursor:pointer;margin:0 0 8px}
+.bascule input{accent-color:var(--moss);width:17px;height:17px}
+.indice{font-size:13px;color:var(--ink-3);margin:0 0 8px}
+.indice[hidden]{display:none}
+.pop-tfv{font-size:13px;color:var(--ink-3);margin:0 0 6px}
+.pop-sp{margin:6px 0 0;padding:0;list-style:none;font-size:13px}
+.pop-sp li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
+
 .carte{height:430px;width:100%;border:1px solid var(--line);border-radius:4px;margin:4px 0 10px;background:var(--card);z-index:0}
 .pin span{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--on-s);border:2px solid #FBFAF6;box-shadow:0 1px 5px rgba(0,0,0,.4)}
 .pin.on span{border-color:#1D231C;border-width:3px;transform:scale(1.18)}
@@ -184,6 +192,9 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
   </div>
   <div class="chips" id="chips"></div>
 </div>
+
+<label class="bascule"><input type="checkbox" id="analyse"> Analyser les peuplements (BD Forêt V2)</label>
+<p class="indice" id="indice" hidden></p>
 
 <div class="carte" id="carte" role="application" aria-label="Carte des secteurs de prospection"></div>
 
@@ -279,64 +290,64 @@ var Z = [
 // sais : présence relative mois par mois, de janvier à décembre.
 // bes : exigence en eau. 1 = standard, en dessous = se contente de peu.
 var SP = [
-{n:"Cèpe de Bordeaux",lat:"Boletus edulis",aff:"2333000333201",bes:1.1,
+{n:"Cèpe de Bordeaux",h:{chene:.9,chataignier:1,hetre:1,pin:.9,bouleau:.8,feuillu:.7,conifere:.7},lat:"Boletus edulis",aff:"2333000333201",bes:1.1,
  sais:[0,0,0,0,.05,.30,.35,.50,.85,1,.60,.10],
  conf:"Le bolet de fiel, amer et non toxique, lui ressemble beaucoup : goûte une miette crue avant de remplir le panier."},
-{n:"Cèpe bronzé",lat:"Boletus aereus",aff:"3112001223302",bes:1.0,
+{n:"Cèpe bronzé",h:{chene:1,chataignier:.7,hetre:.6,feuillu:.6},lat:"Boletus aereus",aff:"3112001223302",bes:1.0,
  sais:[0,0,0,0,.10,.50,.60,.80,.90,.70,.20,0],
  conf:""},
-{n:"Bolet bai",lat:"Imleria badia",aff:"1323000332100",bes:1.0,
+{n:"Bolet bai",h:{pin:1,conifere:.9,chene:.8,chataignier:.8,hetre:.8,feuillu:.6},lat:"Imleria badia",aff:"1323000332100",bes:1.0,
  sais:[0,0,0,0,0,.20,.30,.50,.80,1,.70,.15],
  conf:""},
-{n:"Girolle",lat:"Cantharellus cibarius",aff:"1333000332100",bes:1.2,
+{n:"Girolle",h:{hetre:1,chene:.9,chataignier:.9,bouleau:.8,pin:.7,feuillu:.7,conifere:.6},lat:"Cantharellus cibarius",aff:"1333000332100",bes:1.2,
  sais:[0,0,0,0,.05,.50,.60,.70,.90,1,.50,.05],
  conf:"La fausse girolle et surtout le clitocybe de l'olivier, toxique, ont des lames vraies au lieu de plis."},
-{n:"Chanterelle en tube",lat:"Craterellus tubaeformis",aff:"1323000332100",bes:1.0,
+{n:"Chanterelle en tube",h:{pin:1,conifere:1,hetre:.8,chene:.6,feuillu:.6},lat:"Craterellus tubaeformis",aff:"1323000332100",bes:1.0,
  sais:[.10,.05,0,0,0,0,0,.10,.40,.90,1,.60],
  conf:""},
-{n:"Trompette de la mort",lat:"Craterellus cornucopioides",aff:"3213000333201",bes:1.1,
+{n:"Trompette de la mort",h:{hetre:1,chene:.9,feuillu:.7,chataignier:.6},lat:"Craterellus cornucopioides",aff:"3213000333201",bes:1.1,
  sais:[0,0,0,0,0,0,.05,.20,.60,1,.90,.30],
  conf:""},
-{n:"Pied de mouton",lat:"Hydnum repandum",aff:"2323000323201",bes:1.0,
+{n:"Pied de mouton",h:{hetre:.9,chene:.9,conifere:.8,pin:.8,chataignier:.7,feuillu:.7},lat:"Hydnum repandum",aff:"2323000323201",bes:1.0,
  sais:[0,0,0,0,0,.05,.10,.30,.70,1,.90,.35],
  conf:""},
-{n:"Lactaire délicieux",lat:"Lactarius deliciosus",aff:"0102000331102",bes:0.9,
+{n:"Lactaire délicieux",h:{pin:1,conifere:.9},lat:"Lactarius deliciosus",aff:"0102000331102",bes:0.9,
  sais:[0,0,0,0,0,.05,.15,.40,.80,1,.70,.20],
  conf:""},
-{n:"Russule charbonnière",lat:"Russula cyanoxantha",aff:"3323001333311",bes:0.9,
+{n:"Russule charbonnière",h:{chene:1,hetre:.9,chataignier:.9,feuillu:.8,pin:.5,conifere:.5},lat:"Russula cyanoxantha",aff:"3323001333311",bes:0.9,
  sais:[0,0,0,0,.20,.60,.60,.70,.90,1,.40,.05],
  conf:"Une russule verdâtre se confond avec l'amanite phalloïde : vérifie l'absence de volve et d'anneau."},
-{n:"Coulemelle",lat:"Macrolepiota procera",aff:"2332313222313",bes:0.8,
+{n:"Coulemelle",h:{herbace:1,lande:.9,ouvert:.9,chene:.6,feuillu:.6,conifere:.5},lat:"Macrolepiota procera",aff:"2332313222313",bes:0.8,
  sais:[0,0,0,0,.05,.20,.35,.60,.95,1,.50,.05],
  conf:"Ne ramasse que les grands exemplaires à anneau coulissant : les petites lépiotes brunes sont mortelles."},
-{n:"Rosé des prés",lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
+{n:"Rosé des prés",h:{herbace:1},lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
  sais:[0,0,0,.10,.40,.50,.40,.50,.90,1,.40,.05],
  conf:"Lames roses puis brunes, jamais blanches : des lames restées blanches signent une amanite."},
-{n:"Marasme des Oréades",lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
+{n:"Marasme des Oréades",h:{herbace:1},lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
  sais:[0,0,.05,.30,.70,.80,.60,.60,.90,.90,.30,.05],
  conf:"Pousse en ronds de sorcières avec le clitocybe blanc, très toxique, aux lames serrées et décurrentes."},
-{n:"Coprin chevelu",lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
+{n:"Coprin chevelu",h:{herbace:.9,ouvert:.8,peuplier:.6,feuillu:.4},lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
  sais:[0,0,.10,.30,.50,.40,.30,.40,.85,1,.70,.20],
  conf:""},
-{n:"Pleurote du panicaut",lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
+{n:"Pleurote du panicaut",h:{herbace:1},lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
  sais:[0,0,0,.20,.50,.40,.20,.30,.70,.90,.50,.10],
  conf:""},
-{n:"Pholiote du peuplier",lat:"Cyclocybe aegerita",aff:"0110131000131",bes:0.7,
+{n:"Pholiote du peuplier",h:{peuplier:1,feuillu:.4},lat:"Cyclocybe aegerita",aff:"0110131000131",bes:0.7,
  sais:[.20,.20,.40,.60,.60,.40,.30,.40,.70,.90,.80,.40],
  conf:"Sur souche, la galérine marginée, mortelle, occupe les mêmes bois : ne mélange jamais deux récoltes."},
-{n:"Pleurote en huître",lat:"Pleurotus ostreatus",aff:"2222131222231",bes:0.7,
+{n:"Pleurote en huître",h:{peuplier:.9,feuillu:.8,hetre:.7,chene:.6},lat:"Pleurotus ostreatus",aff:"2222131222231",bes:0.7,
  sais:[.40,.40,.30,.20,.10,.05,.05,.10,.40,.80,1,.70],
  conf:""},
-{n:"Morille",lat:"Morchella sp.",aff:"1001131001131",bes:0.9,
+{n:"Morille",h:{peuplier:.9,feuillu:.5,ouvert:.5},lat:"Morchella sp.",aff:"1001131001131",bes:0.9,
  sais:[0,.10,.80,1,.40,0,0,0,0,0,0,0],
  conf:"Toxique crue, et les gyromitres du printemps sont dangereux : cuisson longue obligatoire."},
-{n:"Truffe de Bourgogne",lat:"Tuber uncinatum",aff:"1000203001203",bes:1.0,
+{n:"Truffe de Bourgogne",h:{chene:1,feuillu:.4},lat:"Tuber uncinatum",aff:"1000203001203",bes:1.0,
  sais:[.20,0,0,0,0,0,0,0,.50,.80,1,.90],
  conf:""},
-{n:"Clitocybe nébuleux",lat:"Clitocybe nebularis",aff:"3212112323312",bes:0.9,
+{n:"Clitocybe nébuleux",h:{hetre:.9,chene:.8,conifere:.8,pin:.8,feuillu:.8,chataignier:.7},lat:"Clitocybe nebularis",aff:"3212112323312",bes:0.9,
  sais:[0,0,0,0,0,0,0,.10,.50,1,.90,.30],
  conf:"L'entolome livide, très toxique, pousse au même endroit et à la même saison."},
-{n:"Amanite des Césars",lat:"Amanita caesarea",aff:"0001000221101",bes:1.0,
+{n:"Amanite des Césars",h:{chene:1,chataignier:.9},lat:"Amanita caesarea",aff:"0001000221101",bes:1.0,
  sais:[0,0,0,0,0,.30,.60,.90,.80,.40,0,0],
  conf:"Jeune, en œuf, elle est indiscernable d'une amanite tue-mouches ou phalloïde sans ouvrir le voile."}
 ];
@@ -355,6 +366,8 @@ var CACHE_MS = 3 * 60 * 60 * 1000;
 
 var elChips = document.getElementById("chips");
 var elToutes = document.getElementById("toutes");
+var elAnalyse = document.getElementById("analyse");
+var elIndice = document.getElementById("indice");
 var elReleve = document.getElementById("releve");
 var elHeure = document.getElementById("heure");
 var elRafraichir = document.getElementById("rafraichir");
@@ -372,6 +385,11 @@ var elRankSous = document.getElementById("rankSous");
 
 var carte = null;
 var pins = [];
+var coucheForet = null;
+var coucheParcelles = null;
+var gjBrut = null;
+var bboxInverse = false;
+var minuteur = null;
 var releves = null;
 var horodatage = 0;
 var manuel = false;
@@ -491,8 +509,10 @@ function initCarte(){
     attribution: "BD Forêt® V2 © IGN"
   });
 
+  coucheForet = foret;
   plan.addTo(carte);
   foret.addTo(carte);
+  carte.on("moveend zoomend", planifieParcelles);
 
   L.control.layers(
     { "Plan IGN": plan, "Photo aérienne": photo },
@@ -501,6 +521,179 @@ function initCarte(){
   ).addTo(carte);
 
   carte.fitBounds([[46.02, -0.90], [47.12, 1.18]]);
+}
+
+/* ---- Analyse par peuplement (BD Forêt V2 via WFS) ---- */
+
+/* Traduit le libellé IGN du peuplement en étiquettes exploitables. */
+function tagsDe(p){
+  var txt = ((p.tfv || "") + " " + (p.essence || "") + " " + (p.tfv_g11 || "") + " " + (p.code_tfv || ""))
+            .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  var t = {};
+  function set(){ for (var i = 0; i < arguments.length; i++) t[arguments[i]] = true; }
+
+  if (txt.indexOf("chene") !== -1) set("chene", "feuillu");
+  if (txt.indexOf("chataignier") !== -1) set("chataignier", "feuillu");
+  if (txt.indexOf("hetre") !== -1) set("hetre", "feuillu");
+  if (txt.indexOf("bouleau") !== -1) set("bouleau", "feuillu");
+  if (txt.indexOf("peupl") !== -1) set("peuplier", "feuillu");
+  if (txt.indexOf("robinier") !== -1) set("feuillu");
+  if (txt.indexOf("pin") !== -1) set("pin", "conifere");
+  if (/sapin|epicea|douglas|meleze|cypres|cedre/.test(txt)) set("conifere");
+  if (txt.indexOf("conifere") !== -1) set("conifere");
+  if (txt.indexOf("feuillu") !== -1) set("feuillu");
+  if (txt.indexOf("melange") !== -1 || txt.indexOf("mixte") !== -1) set("feuillu", "conifere");
+  if (txt.indexOf("lande") !== -1) set("lande", "ouvert");
+  if (txt.indexOf("herbac") !== -1) set("herbace", "ouvert");
+  if (txt.indexOf("ouverte") !== -1) set("ouvert");
+
+  t.jeune = (txt.indexOf("jeune peuplement") !== -1 || txt.indexOf("coupe rase") !== -1);
+  t.libelle = p.tfv || p.essence || "Peuplement non renseigné";
+  return t;
+}
+
+/* Un jeune peuplement ou une lande produit moins qu'une futaie fermée. */
+function densite(t){
+  if (t.jeune) return 0.45;
+  if (t.herbace) return 1;
+  if (t.lande) return 0.7;
+  if (t.ouvert) return 0.8;
+  return 1;
+}
+
+function chanceParcelle(sp, t, i, mois){
+  var meilleur = 0;
+  for (var k in sp.h) if (t[k] && sp.h[k] > meilleur) meilleur = sp.h[k];
+  if (!meilleur) return 0;
+  return meilleur * densite(t) * sp.sais[mois] * facteurPluie(pluieDe(i) / sp.bes, Z[i].ret);
+}
+
+function scoreParcelle(t, i, mois){
+  if (choix.length){
+    var echec = 1;
+    for (var a = 0; a < choix.length; a++) echec *= (1 - chanceParcelle(SP[choix[a]], t, i, mois));
+    return (1 - echec) * 10;
+  }
+  var vals = SP.map(function(sp){ return chanceParcelle(sp, t, i, mois); })
+               .sort(function(a, b){ return b - a; });
+  var s = vals[0] * 2;
+  for (var k = 1; k < 5; k++) s += vals[k];
+  return Math.min(10, s * 1.7);
+}
+
+/* Le secteur le plus proche fournit la pluie et la rétention du sol. */
+function secteurProche(lat, lon){
+  var best = 0, d0 = Infinity;
+  for (var i = 0; i < Z.length; i++){
+    var dx = (Z[i].lon - lon) * 0.687, dy = Z[i].lat - lat;
+    var d = dx * dx + dy * dy;
+    if (d < d0){ d0 = d; best = i; }
+  }
+  return best;
+}
+
+/* Le WFS peut renvoyer les coordonnées en lat/lon selon l'interprétation
+   d'EPSG:4326. On détecte et on remet dans l'ordre attendu par Leaflet. */
+function premiereCoord(g){
+  var c = g && g.coordinates;
+  while (Array.isArray(c) && Array.isArray(c[0])) c = c[0];
+  return Array.isArray(c) ? c : null;
+}
+function inverse(c){
+  if (typeof c[0] === "number"){ var x = c[0]; c[0] = c[1]; c[1] = x; return; }
+  for (var i = 0; i < c.length; i++) inverse(c[i]);
+}
+function normalise(gj){
+  var f = (gj.features || []).find(function(x){ return x.geometry; });
+  var p = f && premiereCoord(f.geometry);
+  if (!p || Math.abs(p[0]) < 20) return gj;
+  (gj.features || []).forEach(function(x){ if (x.geometry) inverse(x.geometry.coordinates); });
+  return gj;
+}
+
+function videParcelles(){
+  if (coucheParcelles){ carte.removeLayer(coucheParcelles); coucheParcelles = null; }
+}
+
+function popupParcelle(t, i, mois, v){
+  var liste = SP.map(function(sp, k){ return { k: k, p: chanceParcelle(sp, t, i, mois) }; })
+                .filter(function(o){ return o.p > 0.04; })
+                .sort(function(a, b){ return b.p - a.p; })
+                .slice(0, 5);
+  var html = '<p class="pop-tfv">' + t.libelle + '</p>' +
+             '<strong>' + NIV[niveau(v)].l + '</strong> — secteur ' + Z[i].n;
+  if (liste.length){
+    html += '<ul class="pop-sp">' + liste.map(function(o){
+      var ns = niveauSp(o.p);
+      return '<li><span>' + SP[o.k].n + '</span><span style="color:' + css(NIV[ns].v) +
+             ';font-weight:600">' + NIV_SP[ns] + '</span></li>';
+    }).join("") + '</ul>';
+  }
+  return html;
+}
+
+function rendParcelles(){
+  videParcelles();
+  if (!gjBrut || !elAnalyse.checked) return;
+  var mois = +elMois.value;
+  coucheParcelles = L.geoJSON(gjBrut, {
+    style: { weight: 0.5, color: "#3A3A34", fillOpacity: 0.6 },
+    onEachFeature: function(f, couche){
+      var c = couche.getBounds().getCenter();
+      var i = secteurProche(c.lat, c.lng);
+      var t = tagsDe(f.properties || {});
+      var v = scoreParcelle(t, i, mois);
+      couche.setStyle({ fillColor: css(NIV[niveau(v)].v) });
+      couche.bindPopup(popupParcelle(t, i, mois, v));
+    }
+  }).addTo(carte);
+  if (coucheParcelles.bringToBack) coucheParcelles.bringToBack();
+}
+
+function planifieParcelles(){
+  clearTimeout(minuteur);
+  minuteur = setTimeout(chargeParcelles, 450);
+}
+
+function chargeParcelles(reessai){
+  if (!elAnalyse.checked){ elIndice.hidden = true; videParcelles(); return; }
+  if (carte.getZoom() < 12){
+    elIndice.hidden = false;
+    elIndice.textContent = "Zoome encore un peu pour analyser les peuplements.";
+    gjBrut = null;
+    videParcelles();
+    return;
+  }
+  var b = carte.getBounds();
+  var bbox = bboxInverse
+    ? [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",")
+    : [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].join(",");
+
+  elIndice.hidden = false;
+  elIndice.textContent = "Lecture des peuplements…";
+
+  var url = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature" +
+            "&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale" +
+            "&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326&COUNT=400" +
+            "&BBOX=" + bbox + ",EPSG:4326";
+
+  fetch(url).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function(gj){
+    var n = (gj.features || []).length;
+    if (!n && !reessai && !bboxInverse){ bboxInverse = true; chargeParcelles(true); return; }
+    gjBrut = normalise(gj);
+    elIndice.textContent = n
+      ? n + " peuplement" + (n > 1 ? "s" : "") + " analysé" + (n > 1 ? "s" : "") +
+        ". Touche une parcelle pour le détail."
+      : "Aucun peuplement forestier dans cette vue.";
+    rendParcelles();
+  }).catch(function(err){
+    gjBrut = null;
+    videParcelles();
+    elIndice.textContent = "Peuplements indisponibles (" + err.message + ").";
+  });
 }
 
 function majPins(scores){
@@ -531,6 +724,7 @@ function dessine(){
   elReset.hidden = !manuel || !releves;
 
   majPins(scores);
+  rendParcelles();
 
   elLegend.innerHTML = NIV.map(function(n){
     return '<span><i class="dot" style="background:' + css(n.v) + '"></i>' + n.l + '</span>';
@@ -701,6 +895,12 @@ document.addEventListener("visibilitychange", function(){
   if (document.visibilityState === "visible" && horodatage && (Date.now() - horodatage) > CACHE_MS){
     charge(true);
   }
+});
+
+elAnalyse.addEventListener("change", function(){
+  if (coucheForet) coucheForet.setOpacity(elAnalyse.checked ? 0 : 0.55);
+  if (elAnalyse.checked) chargeParcelles();
+  else { elIndice.hidden = true; videParcelles(); }
 });
 
 elMois.addEventListener("change", dessine);
