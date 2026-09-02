@@ -1,7 +1,7 @@
 /* Service worker — carte des champignons.
    Incrémente VERSION à chaque modification d'un fichier précaché. */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = "champi-shell-" + VERSION;
 const RUNTIME = "champi-runtime-" + VERSION;
 const DATA = "champi-data-" + VERSION;
@@ -43,7 +43,8 @@ self.addEventListener("message", (e) => {
   if (e.data === "skipWaiting") self.skipWaiting();
 });
 
-/* Réseau d'abord, cache en secours. */
+/* Réseau d'abord, cache en secours. Le cache est ouvert AVANT le fetch,
+   pour que le clone se fasse sans attente intermédiaire. */
 async function reseauDAbord(req, nomCache) {
   const cache = await caches.open(nomCache);
   try {
@@ -68,24 +69,33 @@ async function cacheDAbord(req, nomCache) {
   return connu || reseau || Response.error();
 }
 
+/* Navigation : réseau d'abord, repli sur la page précachée hors connexion.
+   Le clone est pris tout de suite, sinon le corps est déjà consommé
+   quand caches.open() se résout. */
+async function navigation(e) {
+  try {
+    const rep = await fetch(e.request);
+    const copie = rep.clone();
+    e.waitUntil(
+      caches.open(SHELL).then((c) => c.put("./index.html", copie))
+    );
+    return rep;
+  } catch (err) {
+    const cache = await caches.open(SHELL);
+    return (await cache.match("./index.html", { ignoreSearch: true }))
+        || (await cache.match("./"))
+        || Response.error();
+  }
+}
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
 
   const url = new URL(req.url);
 
-  /* Navigation : réseau d'abord pour attraper les mises à jour,
-     repli sur la page précachée hors connexion. */
   if (req.mode === "navigate") {
-    e.respondWith(
-      fetch(req)
-        .then((rep) => {
-          caches.open(SHELL).then((c) => c.put("./index.html", rep.clone()));
-          return rep;
-        })
-        .catch(() => caches.match("./index.html", { ignoreSearch: true })
-          .then((r) => r || caches.match("./")))
-    );
+    e.respondWith(navigation(e));
     return;
   }
 
