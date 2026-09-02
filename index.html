@@ -128,6 +128,18 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .credit{font-size:13px;color:var(--ink-3);margin-top:22px}
 .credit a{color:inherit}
 
+.filtre{margin:0 0 20px}
+.filtre-tete{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:8px}
+.filtre-titre{font-size:13px;font-weight:600;color:var(--ink-3)}
+.lien{font:inherit;font-size:13px;background:none;border:none;padding:0;color:var(--moss);cursor:pointer;text-decoration:underline}
+.lien[hidden]{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;line-height:1.3;background:var(--card);color:var(--ink-2);border:1px solid var(--line-2);border-radius:999px;padding:5px 11px;cursor:pointer}
+.chip:hover{border-color:var(--ink-3);color:var(--ink)}
+.chip.on{background:var(--moss);border-color:var(--moss);color:var(--on-s);font-weight:600}
+.releve{font-size:13px;color:var(--ink-3);margin:-16px 0 22px}
+.releve[hidden]{display:none}
+
 .maj{position:fixed;left:16px;right:16px;bottom:16px;max-width:420px;margin:0 auto;background:var(--ink);color:var(--paper);border-radius:4px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:10}
 .maj button{font:inherit;font-size:14px;font-weight:600;background:var(--moss);color:var(--on-s);border:none;border-radius:3px;padding:7px 13px;cursor:pointer;white-space:nowrap}
 .maj[hidden]{display:none}
@@ -142,12 +154,9 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 <p class="lede">Treize secteurs des Deux-Sèvres et de la Vienne, vingt espèces, croisés avec la pluie réellement tombée sur chaque secteur ces quinze derniers jours, la capacité des sols à la retenir, les essences présentes et la saison.</p>
 
 <p class="status" id="status">Relevé des pluies en cours…</p>
+<p class="releve" id="releve" hidden>Relevés récupérés à <span id="heure"></span>. <button type="button" class="lien" id="rafraichir">Actualiser</button></p>
 
 <div class="controls">
-  <div class="field">
-    <label for="espece">Espèce</label>
-    <select id="espece"></select>
-  </div>
   <div class="field">
     <label for="mois">Mois</label>
     <select id="mois"></select>
@@ -158,6 +167,14 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
     <span class="readout" id="pluieOut">25 mm</span>
   </div>
   <button type="button" class="reset" id="reset" hidden>Revenir aux relevés</button>
+</div>
+
+<div class="filtre">
+  <div class="filtre-tete">
+    <span class="filtre-titre">Espèces suivies</span>
+    <button type="button" class="lien" id="toutes" hidden>Tout décocher</button>
+  </div>
+  <div class="chips" id="chips"></div>
 </div>
 
 <svg class="map" viewBox="0 0 380 288" role="img" aria-labelledby="mapTitle mapDesc">
@@ -336,7 +353,11 @@ var NIV_SP = ["nulle","faible","possible","bonne","forte"];
 var CACHE_KEY = "champi-pluie-v2";
 var CACHE_MS = 3 * 60 * 60 * 1000;
 
-var elEspece = document.getElementById("espece");
+var elChips = document.getElementById("chips");
+var elToutes = document.getElementById("toutes");
+var elReleve = document.getElementById("releve");
+var elHeure = document.getElementById("heure");
+var elRafraichir = document.getElementById("rafraichir");
 var elMois = document.getElementById("mois");
 var elPluie = document.getElementById("pluie");
 var elPluieOut = document.getElementById("pluieOut");
@@ -351,8 +372,10 @@ var elRankTitre = document.getElementById("rankTitre");
 var elRankSous = document.getElementById("rankSous");
 
 var releves = null;
+var horodatage = 0;
 var manuel = false;
 var sel = 7;
+var choix = [];
 
 function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 
@@ -400,9 +423,37 @@ function niveauSp(p){
   return 0;
 }
 
-function especeActive(){
-  var v = elEspece.value;
-  return v === "" ? null : SP[+v];
+/* Chances de trouver AU MOINS UNE des espèces cochées : on multiplie les
+   probabilités d'échec de chacune, et on prend le complément. */
+function chanceGroupe(i, mois){
+  var echec = 1;
+  for (var a = 0; a < choix.length; a++) echec *= (1 - chance(SP[choix[a]], i, mois));
+  return 1 - echec;
+}
+
+function nomsChoix(){
+  if (choix.length === 1) return SP[choix[0]].n.toLowerCase();
+  return "l\u2019une des " + choix.length + " espèces cochées";
+}
+
+function puces(){
+  elChips.innerHTML = SP.map(function(sp, k){
+    var on = choix.indexOf(k) !== -1;
+    return '<button type="button" class="chip' + (on ? " on" : "") + '" data-k="' + k +
+           '" aria-pressed="' + on + '">' + sp.n + '</button>';
+  }).join("");
+  var b = elChips.querySelectorAll(".chip");
+  for (var i = 0; i < b.length; i++){
+    (function(el){
+      el.addEventListener("click", function(){
+        var k = +el.dataset.k, p = choix.indexOf(k);
+        if (p === -1) choix.push(k); else choix.splice(p, 1);
+        puces();
+        dessine();
+      });
+    })(b[i]);
+  }
+  elToutes.hidden = (choix.length === 0);
 }
 
 function listeEspeces(i, mois){
@@ -417,9 +468,9 @@ function listeEspeces(i, mois){
 
 function dessine(){
   var mois = +elMois.value;
-  var sp = especeActive();
+  var nb = choix.length;
   var scores = Z.map(function(_, i){
-    return sp ? chance(sp, i, mois) * 10 : potentiel(i, mois);
+    return nb ? chanceGroupe(i, mois) * 10 : potentiel(i, mois);
   });
 
   elPluieOut.textContent = elPluie.value + " mm";
@@ -450,9 +501,9 @@ function dessine(){
   elLegend.innerHTML = NIV.map(function(n){
     return '<span><i class="dot" style="background:' + css(n.v) + '"></i>' + n.l + '</span>';
   }).join("");
-  elLegendNote.textContent = sp
-    ? "Couleurs : chances de trouver « " + sp.n + " » en " + MOIS[mois] + "."
-    : "Couleurs : potentiel toutes espèces confondues. Choisis une espèce pour voir sa répartition.";
+  elLegendNote.textContent = nb
+    ? "Couleurs : chances de trouver " + nomsChoix() + " en " + MOIS[mois] + "."
+    : "Couleurs : potentiel toutes espèces confondues. Coche des espèces pour voir leur répartition.";
 
   var z = Z[sel], v = scores[sel], n = NIV[niveau(v)];
   var mm = Math.round(pluieDe(sel));
@@ -467,7 +518,7 @@ function dessine(){
   } else {
     htmlSp = '<ul class="sp">' + liste.map(function(o){
       var e = SP[o.k], ns = niveauSp(o.p), col = css(NIV[ns].v);
-      var actif = (sp === e) ? ' class="on"' : '';
+      var actif = (choix.indexOf(o.k) !== -1) ? ' class="on"' : '';
       return '<li' + actif + '><div class="sp-top"><span class="sp-nom">' + e.n +
              ' <span class="sp-lat">' + e.lat + '</span></span>' +
              '<span class="sp-lab" style="color:' + col + '">' + NIV_SP[ns] + '</span></div>' +
@@ -488,12 +539,12 @@ function dessine(){
     '<p class="meter">Indice du secteur <b>' + v.toFixed(1) + '</b> sur 10. ' + ligne + '.</p>';
 
   var ordre = Z.map(function(_, i){ return i; }).sort(function(a, b){ return scores[b] - scores[a]; }).slice(0, 5);
-  elRankTitre.textContent = sp ? "Où trouver " + sp.n.toLowerCase() : "Les meilleurs secteurs en ce moment";
-  elRankSous.textContent = sp
-    ? "Classement pour cette espèce en " + MOIS[mois] + "."
+  elRankTitre.textContent = nb ? "Où trouver " + nomsChoix() : "Les meilleurs secteurs en ce moment";
+  elRankSous.textContent = nb
+    ? "Classement pour cette sélection en " + MOIS[mois] + "."
     : "Toutes espèces confondues, en " + MOIS[mois] + ".";
   elRank.innerHTML = ordre.map(function(i){
-    var lab = sp ? NIV_SP[niveauSp(scores[i] / 10)] : scores[i].toFixed(1);
+    var lab = nb ? NIV_SP[niveauSp(scores[i] / 10)] : scores[i].toFixed(1);
     return '<li><button type="button" data-i="' + i + '">' + (i + 1) + ". " + Z[i].n + '</button>' +
            '<span class="val" style="color:' + css(NIV[niveau(scores[i])].v) + '">' + lab + '</span></li>';
   }).join("");
@@ -513,8 +564,15 @@ function moyennePassee(){
   return releves.reduce(function(s, r){ return s + r.passe; }, 0) / releves.length;
 }
 
+function heureCourte(t){
+  var d = new Date(t);
+  return String(d.getHours()).padStart(2, "0") + "h" + String(d.getMinutes()).padStart(2, "0");
+}
+
 function majStatut(){
   if (!releves) return;
+  elReleve.hidden = false;
+  elHeure.textContent = heureCourte(horodatage);
   var moy = moyennePassee();
   var avenir = releves.reduce(function(s, r){ return s + r.avenir; }, 0) / releves.length;
   var etat;
@@ -528,11 +586,14 @@ function majStatut(){
     " mm annoncés sur les sept prochains. Le curseur suit ces relevés, secteur par secteur.";
 }
 
-function charge(){
+function charge(force){
   var cache = null;
-  try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch(e){}
+  if (!force){
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch(e){}
+  }
   if (cache && cache.t && (Date.now() - cache.t) < CACHE_MS && cache.d && cache.d.length === Z.length){
     releves = cache.d;
+    horodatage = cache.t;
     elPluie.value = Math.round(moyennePassee());
     majStatut();
     dessine();
@@ -563,7 +624,8 @@ function charge(){
       }
       return { passe: passe, avenir: avenir };
     });
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: releves })); } catch(e){}
+    horodatage = Date.now();
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: horodatage, d: releves })); } catch(e){}
     elPluie.value = Math.round(moyennePassee());
     majStatut();
     dessine();
@@ -577,16 +639,7 @@ function charge(){
   });
 }
 
-var opt = document.createElement("option");
-opt.value = "";
-opt.textContent = "Toutes espèces";
-elEspece.appendChild(opt);
-for (var s = 0; s < SP.length; s++){
-  var o = document.createElement("option");
-  o.value = s;
-  o.textContent = SP[s].n;
-  elEspece.appendChild(o);
-}
+puces();
 
 for (var m = 0; m < 12; m++){
   var om = document.createElement("option");
@@ -596,7 +649,25 @@ for (var m = 0; m < 12; m++){
 }
 elMois.value = new Date().getMonth();
 
-elEspece.addEventListener("change", dessine);
+elToutes.addEventListener("click", function(){
+  choix = [];
+  puces();
+  dessine();
+});
+
+elRafraichir.addEventListener("click", function(){
+  elRafraichir.textContent = "Actualisation…";
+  charge(true);
+  setTimeout(function(){ elRafraichir.textContent = "Actualiser"; }, 1500);
+});
+
+/* Au retour sur l'onglet, on rappelle l'API si les relevés ont vieilli. */
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState === "visible" && horodatage && (Date.now() - horodatage) > CACHE_MS){
+    charge(true);
+  }
+});
+
 elMois.addEventListener("change", dessine);
 elPluie.addEventListener("input", function(){ manuel = true; dessine(); });
 elReset.addEventListener("click", function(){
