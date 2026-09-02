@@ -1,7 +1,7 @@
 /* Service worker — carte des champignons.
    Incrémente VERSION à chaque modification d'un fichier précaché. */
 
-const VERSION = "v2";
+const VERSION = "v3";
 const SHELL = "champi-shell-" + VERSION;
 const RUNTIME = "champi-runtime-" + VERSION;
 const DATA = "champi-data-" + VERSION;
@@ -44,12 +44,19 @@ self.addEventListener("message", (e) => {
 });
 
 /* Réseau d'abord, cache en secours. Le cache est ouvert AVANT le fetch,
-   pour que le clone se fasse sans attente intermédiaire. */
+   pour que le clone se fasse sans attente intermédiaire, et l'écriture
+   est attendue pour qu'elle ne soit pas coupée par la mise en veille. */
 async function reseauDAbord(req, nomCache) {
   const cache = await caches.open(nomCache);
   try {
     const rep = await fetch(req);
-    if (rep && rep.ok) cache.put(req, rep.clone());
+    if (rep && rep.ok) {
+      try {
+        await cache.put(req, rep.clone());
+      } catch (err) {
+        /* quota plein ou réponse non stockable : on sert quand même la page */
+      }
+    }
     return rep;
   } catch (err) {
     const vieux = await cache.match(req);
