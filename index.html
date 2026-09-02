@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Où chercher les champignons — Deux-Sèvres et Vienne</title>
+<meta name="description" content="Carte du potentiel de cueillette en Deux-Sèvres et Vienne, espèce par espèce, calculée à partir de la pluie des quinze derniers jours, de la nature des sols et des essences forestières.">
+<meta name="theme-color" content="#F2F1EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14180F" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Champignons">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F2F1EC;
+  --card:#FBFAF6;
+  --ink:#1D231C;
+  --ink-2:#5A6154;
+  --ink-3:#8B9184;
+  --line:#DEDCD2;
+  --line-2:#C6C4B8;
+  --moss:#4E7A2A;
+  --s0:#A8443A;
+  --s1:#C98A2E;
+  --s2:#8E9284;
+  --s3:#7C9A43;
+  --s4:#4E7A2A;
+  --on-s:#FFFFFF;
+  --warn:#A8443A;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --serif:"Instrument Serif",Georgia,"Times New Roman",serif;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --paper:#14180F;
+    --card:#1C2118;
+    --ink:#E6E9DD;
+    --ink-2:#A9AF9E;
+    --ink-3:#7C8274;
+    --line:#2C3226;
+    --line-2:#3E4536;
+    --moss:#9BBF62;
+    --s0:#C4574B;
+    --s1:#DDA13F;
+    --s2:#8E9284;
+    --s3:#8FAF4F;
+    --s4:#6E9C33;
+    --on-s:#12160F;
+    --warn:#D9705F;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.6}
+.wrap{max-width:640px;margin:0 auto;padding:28px 20px 64px}
+h1{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1.08;letter-spacing:-.01em;margin:0 0 10px}
+h2{font-family:var(--serif);font-weight:400;font-size:24px;line-height:1.2;margin:0}
+h3{font-size:13px;font-weight:600;color:var(--ink-3);margin:20px 0 8px;letter-spacing:.01em}
+.lede{margin:0 0 26px;color:var(--ink-2);max-width:56ch}
+.status{border-left:2px solid var(--moss);padding:2px 0 2px 14px;margin:0 0 24px;font-size:15px;color:var(--ink-2)}
+.status strong{color:var(--ink);font-weight:600}
+.status.err{border-left-color:var(--s0)}
+
+.controls{display:flex;flex-wrap:wrap;gap:14px 18px;align-items:center;margin:0 0 20px}
+.field{display:flex;align-items:center;gap:9px;flex:1 1 100%}
+.field label{font-size:14px;color:var(--ink-2);white-space:nowrap;min-width:52px}
+select{font:inherit;font-size:15px;color:var(--ink);background:var(--card);border:1px solid var(--line-2);border-radius:3px;padding:7px 10px;flex:1;max-width:100%}
+input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
+.readout{font-size:15px;font-weight:600;min-width:62px;text-align:right;font-variant-numeric:tabular-nums}
+.reset{font:inherit;font-size:14px;color:var(--ink-2);background:none;border:1px solid var(--line-2);border-radius:3px;padding:6px 12px;cursor:pointer}
+.reset:hover{color:var(--ink);border-color:var(--ink-3)}
+.reset[hidden]{display:none}
+
+.map{display:block;width:100%;height:auto;margin:4px 0 6px;touch-action:manipulation}
+.mk{cursor:pointer}
+.mk text{font-size:12px;font-weight:600;pointer-events:none;font-family:var(--sans)}
+.mk:focus{outline:none}
+.mk:focus-visible circle{stroke:var(--ink);stroke-width:2.5}
+.dept{font-size:12px;fill:var(--ink-3);font-family:var(--sans)}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2);margin:0 0 12px}
+.legend span{display:flex;align-items:center;gap:6px}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.legend-note{font-size:13px;color:var(--ink-3);margin:0 0 24px}
+
+.panel{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:20px 22px}
+.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:2px}
+.badge{font-size:13px;font-weight:600;padding:4px 11px;border-radius:3px;color:var(--on-s);white-space:nowrap}
+.sub{font-size:13px;color:var(--ink-3);margin:0 0 12px}
+.panel dl{margin:0;font-size:15px}
+.panel dt{font-size:13px;color:var(--ink-3);margin:14px 0 1px}
+.panel dd{margin:0;color:var(--ink)}
+.meter{margin:16px 0 0;font-size:14px;color:var(--ink-2)}
+.meter b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+.sp{margin:0;padding:0;list-style:none}
+.sp li{padding:9px 0;border-top:1px solid var(--line)}
+.sp li:first-child{border-top:none}
+.sp li.on{background:linear-gradient(90deg,rgba(78,122,42,.10),transparent);margin:0 -10px;padding-left:10px;padding-right:10px;border-radius:3px}
+.sp-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.sp-nom{font-size:15px}
+.sp-lat{font-size:12px;color:var(--ink-3);font-style:italic}
+.sp-lab{font-size:13px;font-weight:600;white-space:nowrap}
+.bar{height:4px;border-radius:2px;background:var(--line);margin-top:6px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:2px}
+.sp-conf{font-size:13px;color:var(--warn);margin:5px 0 0}
+.sp-vide{font-size:15px;color:var(--ink-2);margin:0}
+
+.rank{margin:28px 0 0}
+.rank h2{margin-bottom:6px}
+.rank p{margin:0 0 4px;font-size:14px;color:var(--ink-3)}
+.rank ol{list-style:none;margin:0;padding:0}
+.rank li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.rank button{font:inherit;background:none;border:none;padding:0;margin:0;color:var(--ink);text-align:left;cursor:pointer;flex:1}
+.rank button:hover{color:var(--moss)}
+.rank .val{font-weight:600;font-size:13px;white-space:nowrap}
+
+.note{margin:34px 0 0;padding-top:22px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-2)}
+.note h2{font-size:20px;margin-bottom:8px}
+.note p{margin:0 0 10px;max-width:60ch}
+.note strong{color:var(--ink)}
+.credit{font-size:13px;color:var(--ink-3);margin-top:22px}
+.credit a{color:inherit}
+
+.maj{position:fixed;left:16px;right:16px;bottom:16px;max-width:420px;margin:0 auto;background:var(--ink);color:var(--paper);border-radius:4px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:10}
+.maj button{font:inherit;font-size:14px;font-weight:600;background:var(--moss);color:var(--on-s);border:none;border-radius:3px;padding:7px 13px;cursor:pointer;white-space:nowrap}
+.maj[hidden]{display:none}
+
+@media (min-width:520px){.field{flex:1 1 auto}h1{font-size:52px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Où chercher les champignons</h1>
+<p class="lede">Treize secteurs des Deux-Sèvres et de la Vienne, vingt espèces, croisés avec la pluie réellement tombée sur chaque secteur ces quinze derniers jours, la capacité des sols à la retenir, les essences présentes et la saison.</p>
+
+<p class="status" id="status">Relevé des pluies en cours…</p>
+
+<div class="controls">
+  <div class="field">
+    <label for="espece">Espèce</label>
+    <select id="espece"></select>
+  </div>
+  <div class="field">
+    <label for="mois">Mois</label>
+    <select id="mois"></select>
+  </div>
+  <div class="field">
+    <label for="pluie">Pluie</label>
+    <input type="range" id="pluie" min="0" max="140" step="1" value="25">
+    <span class="readout" id="pluieOut">25 mm</span>
+  </div>
+  <button type="button" class="reset" id="reset" hidden>Revenir aux relevés</button>
+</div>
+
+<svg class="map" viewBox="0 0 380 288" role="img" aria-labelledby="mapTitle mapDesc">
+<title id="mapTitle">Carte des Deux-Sèvres et de la Vienne</title>
+<desc id="mapDesc">Contour schématique des deux départements avec treize secteurs numérotés, colorés du rouge au vert selon les chances de trouver des champignons.</desc>
+<path d="M57,51 L85,43 L128,55 L149,72 L156,102 L163,139 L171,168 L178,199 L185,225 L180,254 L142,246 L107,234 L78,217 L53,209 L62,176 L76,152 L56,123 L42,90 L47,63 Z" fill="var(--card)" stroke="var(--line-2)" stroke-width="1"/>
+<path d="M177,45 L208,53 L242,70 L267,86 L278,115 L306,135 L323,164 L312,192 L284,225 L264,250 L233,246 L205,250 L185,225 L178,199 L171,168 L163,139 L156,102 L149,72 Z" fill="var(--card)" stroke="var(--line-2)" stroke-width="1"/>
+<text class="dept" x="95" y="278" text-anchor="middle">Deux-Sèvres</text>
+<text class="dept" x="265" y="278" text-anchor="middle">Vienne</text>
+<g id="marks"></g>
+</svg>
+
+<div class="legend" id="legend"></div>
+<p class="legend-note" id="legendNote"></p>
+
+<div class="panel" id="panel"></div>
+
+<section class="rank">
+  <h2 id="rankTitre">Les meilleurs en ce moment</h2>
+  <p id="rankSous"></p>
+  <ol id="rank"></ol>
+</section>
+
+<section class="note">
+  <h2>À lire avant de partir</h2>
+  <p><strong>Cette carte ne détermine rien.</strong> Les mentions de confusion signalent les sosies dangereux les plus fréquents, elles ne remplacent pas une identification. Fais valider ta cueillette par un pharmacien avant de manger quoi que ce soit.</p>
+  <p>Les poussées arrivent huit à quinze jours après la pluie : un cumul qui vient de monter annonce une sortie à venir, pas une sortie du jour.</p>
+  <p>En forêt privée, la cueillette demande l'accord du propriétaire. La réserve biologique de Chizé est fermée à la cueillette.</p>
+  <p class="credit">Pluviométrie : <a href="https://open-meteo.com/">Open-Meteo</a>, relevé par secteur. Contours départementaux schématiques.</p>
+</section>
+
+</div>
+
+<div class="maj" id="maj" hidden>
+  <span>Une nouvelle version est prête.</span>
+  <button type="button" id="majBtn">Recharger</button>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+var MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+
+var Z = [
+{n:"Forêt de Chizé",dep:"Deux-Sèvres",x:107,y:239,lat:46.13,lon:-0.40,ret:1.15,
+ sol:"Argile à silex sur calcaire, vallons frais",
+ ess:"Chêne pédonculé, charme, hêtre, merisier",
+ tip:"Une large part du massif est en réserve biologique, cueillette interdite. Vérifie le zonage ONF avant d'entrer."},
+{n:"Gâtine de Parthenay",dep:"Deux-Sèvres",x:104,y:143,lat:46.60,lon:-0.42,ret:1.25,
+ sol:"Socle granitique et schisteux, limons acides",
+ ess:"Chêne, châtaignier, hêtre, haies de bocage",
+ tip:"La meilleure réserve d'eau du département : c'est ici que ça repart le plus vite après une pluie."},
+{n:"Bocage bressuirais",dep:"Deux-Sèvres",x:81,y:106,lat:46.78,lon:-0.58,ret:1.20,
+ sol:"Schistes et granites, sols acides drainants",
+ ess:"Châtaignier, chêne, frêne, haies bocagères",
+ tip:"Beaucoup de petits bois privés. Les prairies pâturées et les pieds de haies donnent souvent plus que les bois."},
+{n:"Forêt de l'Hermitain",dep:"Deux-Sèvres",x:132,y:188,lat:46.38,lon:-0.22,ret:1.15,
+ sol:"Limons et argile à silex, réserve d'eau correcte",
+ ess:"Chêne, châtaignier, hêtre, pin sylvestre",
+ tip:"Massif compact accessible depuis Saint-Maixent. Les versants nord gardent l'humidité bien plus longtemps."},
+{n:"Plaine d'Airvault et Thouars",dep:"Deux-Sèvres",x:135,y:113,lat:46.75,lon:-0.20,ret:0.65,
+ sol:"Calcaire filtrant, terre superficielle",
+ ess:"Chênaies claires, prairies, peu de bois",
+ tip:"Sèche la première, remouille la dernière. Vise les prairies et les bordures de haies, pas les boisements."},
+{n:"Marais poitevin",dep:"Deux-Sèvres",x:70,y:203,lat:46.31,lon:-0.66,ret:1.50,
+ sol:"Alluvions humides, nappe affleurante",
+ ess:"Peuplier, frêne têtard, aulne, saule",
+ tip:"Le secteur le plus résistant à la sécheresse. Quand tout est sec ailleurs, c'est ici qu'il reste quelque chose."},
+{n:"Thouarsais",dep:"Deux-Sèvres",x:132,y:67,lat:46.97,lon:-0.22,ret:0.70,
+ sol:"Calcaires et marnes, coteaux secs",
+ ess:"Chêne pubescent, noisetier, charme",
+ tip:"Pic tardif, novembre et décembre plutôt qu'octobre. Les truffières sont souvent privées et balisées."},
+{n:"Forêt de Moulière",dep:"Vienne",x:236,y:137,lat:46.63,lon:0.52,ret:1.10,
+ sol:"Sables et argile à silex, acide",
+ ess:"Chêne sessile, châtaignier, pin maritime et sylvestre, hêtre",
+ tip:"Le massif le plus productif des deux départements, environ 7 000 hectares. Les parcelles de pins réagissent avant les chênaies."},
+{n:"Montmorillonnais et brandes",dep:"Vienne",x:290,y:180,lat:46.42,lon:0.90,ret:1.30,
+ sol:"Argiles et sables acides, landes de brandes",
+ ess:"Chêne, bouleau, pin sylvestre, châtaignier",
+ tip:"Sols argileux qui retiennent l'eau : souvent le premier secteur à repartir après un épisode pluvieux d'automne."},
+{n:"Forêt de Scévolles",dep:"Vienne",x:198,y:72,lat:46.95,lon:0.25,ret:1.15,
+ sol:"Argile à silex sur calcaire profond",
+ ess:"Chêne, charme, hêtre, quelques résineux",
+ tip:"Grande forêt domaniale du Loudunais, peu fréquentée en semaine. Cherche les creux et les bords de fossés."},
+{n:"Saint-Sauvant et Vouillé",dep:"Vienne",x:184,y:174,lat:46.45,lon:0.15,ret:0.90,
+ sol:"Calcaire recouvert de placages d'argile à silex",
+ ess:"Chêne, charme, châtaignier par endroits",
+ tip:"Très variable selon l'épaisseur d'argile : les plateaux calcaires nus donnent peu, les placages argileux beaucoup."},
+{n:"Vallée de la Vienne",dep:"Vienne",x:238,y:96,lat:46.83,lon:0.53,ret:1.45,
+ sol:"Alluvions et graviers, nappe proche",
+ ess:"Peupleraies de culture, frêne, aulne, saule",
+ tip:"Les peupleraies exploitées sont privées. Bon plan de repli en année sèche grâce à la nappe alluviale."},
+{n:"Civraisien et sud Vienne",dep:"Vienne",x:212,y:234,lat:46.16,lon:0.35,ret:0.70,
+ sol:"Calcaire du seuil du Poitou, sols minces",
+ ess:"Chêne pubescent, noisetier, buis, pin noir",
+ tip:"Secteur sec par nature. N'y va qu'après un vrai épisode pluvieux, au-delà de 40 mm."}
+];
+
+// aff : affinité de l'espèce pour chacun des 13 secteurs, de 0 (absente) à 3 (typique),
+//       dans l'ordre du tableau Z ci-dessus.
+// sais : présence relative mois par mois, de janvier à décembre.
+// bes : exigence en eau. 1 = standard, en dessous = se contente de peu.
+var SP = [
+{n:"Cèpe de Bordeaux",lat:"Boletus edulis",aff:"2333000333201",bes:1.1,
+ sais:[0,0,0,0,.05,.30,.35,.50,.85,1,.60,.10],
+ conf:"Le bolet de fiel, amer et non toxique, lui ressemble beaucoup : goûte une miette crue avant de remplir le panier."},
+{n:"Cèpe bronzé",lat:"Boletus aereus",aff:"3112001223302",bes:1.0,
+ sais:[0,0,0,0,.10,.50,.60,.80,.90,.70,.20,0],
+ conf:""},
+{n:"Bolet bai",lat:"Imleria badia",aff:"1323000332100",bes:1.0,
+ sais:[0,0,0,0,0,.20,.30,.50,.80,1,.70,.15],
+ conf:""},
+{n:"Girolle",lat:"Cantharellus cibarius",aff:"1333000332100",bes:1.2,
+ sais:[0,0,0,0,.05,.50,.60,.70,.90,1,.50,.05],
+ conf:"La fausse girolle et surtout le clitocybe de l'olivier, toxique, ont des lames vraies au lieu de plis."},
+{n:"Chanterelle en tube",lat:"Craterellus tubaeformis",aff:"1323000332100",bes:1.0,
+ sais:[.10,.05,0,0,0,0,0,.10,.40,.90,1,.60],
+ conf:""},
+{n:"Trompette de la mort",lat:"Craterellus cornucopioides",aff:"3213000333201",bes:1.1,
+ sais:[0,0,0,0,0,0,.05,.20,.60,1,.90,.30],
+ conf:""},
+{n:"Pied de mouton",lat:"Hydnum repandum",aff:"2323000323201",bes:1.0,
+ sais:[0,0,0,0,0,.05,.10,.30,.70,1,.90,.35],
+ conf:""},
+{n:"Lactaire délicieux",lat:"Lactarius deliciosus",aff:"0102000331102",bes:0.9,
+ sais:[0,0,0,0,0,.05,.15,.40,.80,1,.70,.20],
+ conf:""},
+{n:"Russule charbonnière",lat:"Russula cyanoxantha",aff:"3323001333311",bes:0.9,
+ sais:[0,0,0,0,.20,.60,.60,.70,.90,1,.40,.05],
+ conf:"Une russule verdâtre se confond avec l'amanite phalloïde : vérifie l'absence de volve et d'anneau."},
+{n:"Coulemelle",lat:"Macrolepiota procera",aff:"2332313222313",bes:0.8,
+ sais:[0,0,0,0,.05,.20,.35,.60,.95,1,.50,.05],
+ conf:"Ne ramasse que les grands exemplaires à anneau coulissant : les petites lépiotes brunes sont mortelles."},
+{n:"Rosé des prés",lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
+ sais:[0,0,0,.10,.40,.50,.40,.50,.90,1,.40,.05],
+ conf:"Lames roses puis brunes, jamais blanches : des lames restées blanches signent une amanite."},
+{n:"Marasme des Oréades",lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
+ sais:[0,0,.05,.30,.70,.80,.60,.60,.90,.90,.30,.05],
+ conf:"Pousse en ronds de sorcières avec le clitocybe blanc, très toxique, aux lames serrées et décurrentes."},
+{n:"Coprin chevelu",lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
+ sais:[0,0,.10,.30,.50,.40,.30,.40,.85,1,.70,.20],
+ conf:""},
+{n:"Pleurote du panicaut",lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
+ sais:[0,0,0,.20,.50,.40,.20,.30,.70,.90,.50,.10],
+ conf:""},
+{n:"Pholiote du peuplier",lat:"Cyclocybe aegerita",aff:"0110131000131",bes:0.7,
+ sais:[.20,.20,.40,.60,.60,.40,.30,.40,.70,.90,.80,.40],
+ conf:"Sur souche, la galérine marginée, mortelle, occupe les mêmes bois : ne mélange jamais deux récoltes."},
+{n:"Pleurote en huître",lat:"Pleurotus ostreatus",aff:"2222131222231",bes:0.7,
+ sais:[.40,.40,.30,.20,.10,.05,.05,.10,.40,.80,1,.70],
+ conf:""},
+{n:"Morille",lat:"Morchella sp.",aff:"1001131001131",bes:0.9,
+ sais:[0,.10,.80,1,.40,0,0,0,0,0,0,0],
+ conf:"Toxique crue, et les gyromitres du printemps sont dangereux : cuisson longue obligatoire."},
+{n:"Truffe de Bourgogne",lat:"Tuber uncinatum",aff:"1000203001203",bes:1.0,
+ sais:[.20,0,0,0,0,0,0,0,.50,.80,1,.90],
+ conf:""},
+{n:"Clitocybe nébuleux",lat:"Clitocybe nebularis",aff:"3212112323312",bes:0.9,
+ sais:[0,0,0,0,0,0,0,.10,.50,1,.90,.30],
+ conf:"L'entolome livide, très toxique, pousse au même endroit et à la même saison."},
+{n:"Amanite des Césars",lat:"Amanita caesarea",aff:"0001000221101",bes:1.0,
+ sais:[0,0,0,0,0,.30,.60,.90,.80,.40,0,0],
+ conf:"Jeune, en œuf, elle est indiscernable d'une amanite tue-mouches ou phalloïde sans ouvrir le voile."}
+];
+
+var NIV = [
+ {l:"très faible",v:"--s0"},
+ {l:"faible",v:"--s1"},
+ {l:"moyen",v:"--s2"},
+ {l:"bon",v:"--s3"},
+ {l:"très bon",v:"--s4"}
+];
+var NIV_SP = ["nulle","faible","possible","bonne","forte"];
+
+var CACHE_KEY = "champi-pluie-v2";
+var CACHE_MS = 3 * 60 * 60 * 1000;
+
+var elEspece = document.getElementById("espece");
+var elMois = document.getElementById("mois");
+var elPluie = document.getElementById("pluie");
+var elPluieOut = document.getElementById("pluieOut");
+var elReset = document.getElementById("reset");
+var elStatus = document.getElementById("status");
+var elMarks = document.getElementById("marks");
+var elLegend = document.getElementById("legend");
+var elLegendNote = document.getElementById("legendNote");
+var elPanel = document.getElementById("panel");
+var elRank = document.getElementById("rank");
+var elRankTitre = document.getElementById("rankTitre");
+var elRankSous = document.getElementById("rankSous");
+
+var releves = null;
+var manuel = false;
+var sel = 7;
+
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function facteurPluie(mm, ret){
+  var eff = mm * ret;
+  var pf = (eff - 8) / 38;
+  if (pf < 0) pf = 0;
+  if (pf > 1) pf = 1;
+  if (eff > 115) pf = Math.max(0.55, 1 - (eff - 115) / 250);
+  return pf;
+}
+
+function pluieDe(i){
+  if (manuel || !releves) return +elPluie.value;
+  return releves[i].passe;
+}
+
+// Chance de trouver une espèce donnée dans un secteur donné, de 0 à 1.
+function chance(sp, i, mois){
+  var aff = (+sp.aff.charAt(i)) / 3;
+  if (!aff) return 0;
+  return aff * sp.sais[mois] * facteurPluie(pluieDe(i) / sp.bes, Z[i].ret);
+}
+
+// Potentiel global d'un secteur : la meilleure espèce compte double, les suivantes s'ajoutent.
+function potentiel(i, mois){
+  var vals = SP.map(function(sp){ return chance(sp, i, mois); }).sort(function(a, b){ return b - a; });
+  var s = vals[0] * 2;
+  for (var k = 1; k < 5; k++) s += vals[k];
+  return Math.min(10, s * 1.7);
+}
+
+function niveau(v){
+  if (v >= 6.5) return 4;
+  if (v >= 4.5) return 3;
+  if (v >= 2.8) return 2;
+  if (v >= 1.3) return 1;
+  return 0;
+}
+function niveauSp(p){
+  if (p >= 0.55) return 4;
+  if (p >= 0.35) return 3;
+  if (p >= 0.18) return 2;
+  if (p >= 0.07) return 1;
+  return 0;
+}
+
+function especeActive(){
+  var v = elEspece.value;
+  return v === "" ? null : SP[+v];
+}
+
+function listeEspeces(i, mois){
+  var out = [];
+  for (var k = 0; k < SP.length; k++){
+    var p = chance(SP[k], i, mois);
+    if (p > 0.03) out.push({ k: k, p: p });
+  }
+  out.sort(function(a, b){ return b.p - a.p; });
+  return out.slice(0, 10);
+}
+
+function dessine(){
+  var mois = +elMois.value;
+  var sp = especeActive();
+  var scores = Z.map(function(_, i){
+    return sp ? chance(sp, i, mois) * 10 : potentiel(i, mois);
+  });
+
+  elPluieOut.textContent = elPluie.value + " mm";
+  elReset.hidden = !manuel || !releves;
+
+  var svg = "";
+  for (var i = 0; i < Z.length; i++){
+    var c = css(NIV[niveau(scores[i])].v);
+    var r = (i === sel) ? 12 : 9.5;
+    svg += '<g class="mk" data-i="' + i + '" tabindex="0" role="button" aria-label="' + Z[i].n + '">' +
+           '<circle cx="' + Z[i].x + '" cy="' + Z[i].y + '" r="' + r + '" fill="' + c +
+           '" stroke="' + (i === sel ? css("--ink") : css("--card")) + '" stroke-width="' + (i === sel ? 2 : 1.5) + '"/>' +
+           '<text x="' + Z[i].x + '" y="' + (Z[i].y + 4) + '" text-anchor="middle" fill="' + css("--on-s") + '">' + (i + 1) + '</text>' +
+           '</g>';
+  }
+  elMarks.innerHTML = svg;
+
+  var noeuds = elMarks.querySelectorAll(".mk");
+  for (var k = 0; k < noeuds.length; k++){
+    (function(g){
+      g.addEventListener("click", function(){ sel = +g.dataset.i; dessine(); });
+      g.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); sel = +g.dataset.i; dessine(); }
+      });
+    })(noeuds[k]);
+  }
+
+  elLegend.innerHTML = NIV.map(function(n){
+    return '<span><i class="dot" style="background:' + css(n.v) + '"></i>' + n.l + '</span>';
+  }).join("");
+  elLegendNote.textContent = sp
+    ? "Couleurs : chances de trouver « " + sp.n + " » en " + MOIS[mois] + "."
+    : "Couleurs : potentiel toutes espèces confondues. Choisis une espèce pour voir sa répartition.";
+
+  var z = Z[sel], v = scores[sel], n = NIV[niveau(v)];
+  var mm = Math.round(pluieDe(sel));
+  var prev = (releves && !manuel) ? Math.round(releves[sel].avenir) : null;
+  var ligne = "Pluie retenue " + mm + " mm sur quinze jours";
+  if (prev !== null) ligne += ", " + prev + " mm annoncés sur sept jours";
+
+  var liste = listeEspeces(sel, mois);
+  var htmlSp;
+  if (!liste.length){
+    htmlSp = '<p class="sp-vide">Rien d\u2019attendu ici en ' + MOIS[mois] + ' avec ce niveau de pluie.</p>';
+  } else {
+    htmlSp = '<ul class="sp">' + liste.map(function(o){
+      var e = SP[o.k], ns = niveauSp(o.p), col = css(NIV[ns].v);
+      var actif = (sp === e) ? ' class="on"' : '';
+      return '<li' + actif + '><div class="sp-top"><span class="sp-nom">' + e.n +
+             ' <span class="sp-lat">' + e.lat + '</span></span>' +
+             '<span class="sp-lab" style="color:' + col + '">' + NIV_SP[ns] + '</span></div>' +
+             '<div class="bar"><i style="width:' + Math.round(o.p * 100) + '%;background:' + col + '"></i></div>' +
+             (e.conf ? '<p class="sp-conf">' + e.conf + '</p>' : '') +
+             '</li>';
+    }).join("") + '</ul>';
+  }
+
+  elPanel.innerHTML =
+    '<div class="panel-head"><h2>' + (sel + 1) + ". " + z.n + '</h2>' +
+    '<span class="badge" style="background:' + css(n.v) + '">' + n.l + '</span></div>' +
+    '<p class="sub">' + z.dep + '</p>' +
+    '<dl><dt>Sol</dt><dd>' + z.sol + '</dd>' +
+    '<dt>Essences</dt><dd>' + z.ess + '</dd>' +
+    '<dt>Sur le terrain</dt><dd>' + z.tip + '</dd></dl>' +
+    '<h3>Ce qu\u2019on peut y trouver en ' + MOIS[mois] + '</h3>' + htmlSp +
+    '<p class="meter">Indice du secteur <b>' + v.toFixed(1) + '</b> sur 10. ' + ligne + '.</p>';
+
+  var ordre = Z.map(function(_, i){ return i; }).sort(function(a, b){ return scores[b] - scores[a]; }).slice(0, 5);
+  elRankTitre.textContent = sp ? "Où trouver " + sp.n.toLowerCase() : "Les meilleurs secteurs en ce moment";
+  elRankSous.textContent = sp
+    ? "Classement pour cette espèce en " + MOIS[mois] + "."
+    : "Toutes espèces confondues, en " + MOIS[mois] + ".";
+  elRank.innerHTML = ordre.map(function(i){
+    var lab = sp ? NIV_SP[niveauSp(scores[i] / 10)] : scores[i].toFixed(1);
+    return '<li><button type="button" data-i="' + i + '">' + (i + 1) + ". " + Z[i].n + '</button>' +
+           '<span class="val" style="color:' + css(NIV[niveau(scores[i])].v) + '">' + lab + '</span></li>';
+  }).join("");
+
+  var btns = elRank.querySelectorAll("button");
+  for (var b = 0; b < btns.length; b++){
+    (function(el){
+      el.addEventListener("click", function(){
+        sel = +el.dataset.i; dessine();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    })(btns[b]);
+  }
+}
+
+function moyennePassee(){
+  return releves.reduce(function(s, r){ return s + r.passe; }, 0) / releves.length;
+}
+
+function majStatut(){
+  if (!releves) return;
+  var moy = moyennePassee();
+  var avenir = releves.reduce(function(s, r){ return s + r.avenir; }, 0) / releves.length;
+  var etat;
+  if (moy < 12) etat = "Sols encore secs, rien n\u2019est lancé";
+  else if (moy < 30) etat = "Il a plu, mais pas assez partout";
+  else if (moy < 60) etat = "Conditions correctes, ça pousse dans les sols qui retiennent";
+  else etat = "Bonnes conditions, la poussée est en cours";
+  elStatus.className = "status";
+  elStatus.innerHTML = "<strong>" + etat + ".</strong> " + Math.round(moy) +
+    " mm en moyenne sur les quinze derniers jours, " + Math.round(avenir) +
+    " mm annoncés sur les sept prochains. Le curseur suit ces relevés, secteur par secteur.";
+}
+
+function charge(){
+  var cache = null;
+  try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch(e){}
+  if (cache && cache.t && (Date.now() - cache.t) < CACHE_MS && cache.d && cache.d.length === Z.length){
+    releves = cache.d;
+    elPluie.value = Math.round(moyennePassee());
+    majStatut();
+    dessine();
+    return;
+  }
+
+  var url = "https://api.open-meteo.com/v1/forecast?latitude=" +
+            Z.map(function(z){ return z.lat; }).join(",") +
+            "&longitude=" + Z.map(function(z){ return z.lon; }).join(",") +
+            "&daily=precipitation_sum&past_days=15&forecast_days=7&timezone=Europe%2FParis";
+
+  fetch(url).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function(data){
+    var lots = Array.isArray(data) ? data : [data];
+    if (lots.length !== Z.length) throw new Error("réponse incomplète");
+    var a = new Date();
+    var cle = a.getFullYear() + "-" + String(a.getMonth() + 1).padStart(2, "0") + "-" + String(a.getDate()).padStart(2, "0");
+    releves = lots.map(function(l){
+      var t = l.daily.time, p = l.daily.precipitation_sum;
+      var pivot = t.indexOf(cle);
+      if (pivot < 0) pivot = 15;
+      var passe = 0, avenir = 0;
+      for (var i = 0; i < t.length; i++){
+        var val = (typeof p[i] === "number") ? p[i] : 0;
+        if (i < pivot) passe += val; else avenir += val;
+      }
+      return { passe: passe, avenir: avenir };
+    });
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: releves })); } catch(e){}
+    elPluie.value = Math.round(moyennePassee());
+    majStatut();
+    dessine();
+  }).catch(function(err){
+    releves = null;
+    manuel = true;
+    elStatus.className = "status err";
+    elStatus.innerHTML = "<strong>Relevés de pluie indisponibles</strong> (" + err.message +
+      "). Règle le curseur à la main avec le cumul des quinze derniers jours.";
+    dessine();
+  });
+}
+
+var opt = document.createElement("option");
+opt.value = "";
+opt.textContent = "Toutes espèces";
+elEspece.appendChild(opt);
+for (var s = 0; s < SP.length; s++){
+  var o = document.createElement("option");
+  o.value = s;
+  o.textContent = SP[s].n;
+  elEspece.appendChild(o);
+}
+
+for (var m = 0; m < 12; m++){
+  var om = document.createElement("option");
+  om.value = m;
+  om.textContent = MOIS[m];
+  elMois.appendChild(om);
+}
+elMois.value = new Date().getMonth();
+
+elEspece.addEventListener("change", dessine);
+elMois.addEventListener("change", dessine);
+elPluie.addEventListener("input", function(){ manuel = true; dessine(); });
+elReset.addEventListener("click", function(){
+  manuel = false;
+  if (releves) elPluie.value = Math.round(moyennePassee());
+  dessine();
+});
+if (window.matchMedia){
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", dessine);
+}
+
+dessine();
+charge();
+})();
+
+/* Service worker : installation, et bandeau quand une nouvelle version attend. */
+(function(){
+"use strict";
+if (!("serviceWorker" in navigator)) return;
+
+var maj = document.getElementById("maj");
+var majBtn = document.getElementById("majBtn");
+var rechargement = false;
+
+navigator.serviceWorker.addEventListener("controllerchange", function(){
+  if (rechargement) return;
+  rechargement = true;
+  window.location.reload();
+});
+
+window.addEventListener("load", function(){
+  navigator.serviceWorker.register("sw.js").then(function(reg){
+    function surveille(sw){
+      if (!sw) return;
+      sw.addEventListener("statechange", function(){
+        if (sw.state === "installed" && navigator.serviceWorker.controller){
+          maj.hidden = false;
+        }
+      });
+    }
+    if (reg.waiting && navigator.serviceWorker.controller) maj.hidden = false;
+    surveille(reg.installing);
+    reg.addEventListener("updatefound", function(){ surveille(reg.installing); });
+
+    majBtn.addEventListener("click", function(){
+      var cible = reg.waiting || reg.installing;
+      if (cible) cible.postMessage("skipWaiting");
+      else window.location.reload();
+    });
+
+    setInterval(function(){ reg.update(); }, 60 * 60 * 1000);
+  }).catch(function(){});
+});
+})();
+</script>
+</body>
+</html>
