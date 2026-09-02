@@ -1,7 +1,7 @@
 /* Service worker — carte des champignons.
    Incrémente VERSION à chaque modification d'un fichier précaché. */
 
-const VERSION = "v4";
+const VERSION = "v5";
 const SHELL = "champi-shell-" + VERSION;
 const RUNTIME = "champi-runtime-" + VERSION;
 const DATA = "champi-data-" + VERSION;
@@ -20,7 +20,14 @@ const A_PRECACHER = [
 ];
 
 const API = "api.open-meteo.com";
-const POLICES = ["fonts.googleapis.com", "fonts.gstatic.com"];
+const CDN = ["fonts.googleapis.com", "fonts.gstatic.com", "unpkg.com"];
+const GEO = "data.geopf.fr";
+
+/* Les tuiles gardent un cache non versionné : elles ne changent pas
+   quand la page évolue, et les reperdre à chaque mise à jour serait
+   pénible pour qui prépare une sortie hors réseau. */
+const TUILES = "champi-tuiles";
+const TUILES_MAX = 700;
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
@@ -32,7 +39,7 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
       .then((noms) => Promise.all(
-        noms.filter((n) => n.startsWith("champi-") && !n.endsWith(VERSION))
+        noms.filter((n) => n.startsWith("champi-") && n !== TUILES && !n.endsWith(VERSION))
             .map((n) => caches.delete(n))
       ))
       .then(() => self.clients.claim())
@@ -63,6 +70,14 @@ async function reseauDAbord(req, nomCache) {
     if (vieux) return vieux;
     throw err;
   }
+}
+
+/* Garde le cache des tuiles sous une taille raisonnable. */
+async function limite(nom, max) {
+  const cache = await caches.open(nom);
+  const cles = await cache.keys();
+  const trop = cles.length - max;
+  for (let i = 0; i < trop; i++) await cache.delete(cles[i]);
 }
 
 /* Cache d'abord, rafraîchi en arrière-plan. */
@@ -112,9 +127,17 @@ self.addEventListener("fetch", (e) => {
     return;
   }
 
-  /* Polices Google : elles ne bougent jamais. */
-  if (POLICES.indexOf(url.hostname) !== -1) {
+  /* Polices et Leaflet : versionnés dans leur URL, donc figés. */
+  if (CDN.indexOf(url.hostname) !== -1) {
     e.respondWith(cacheDAbord(req, RUNTIME));
+    return;
+  }
+
+  /* Tuiles IGN et BD Forêt : servies depuis le cache si déjà vues,
+     ce qui rend consultable hors réseau la zone déjà parcourue. */
+  if (url.hostname === GEO) {
+    e.respondWith(cacheDAbord(req, TUILES));
+    if (Math.random() < 0.05) e.waitUntil(limite(TUILES, TUILES_MAX));
     return;
   }
 
