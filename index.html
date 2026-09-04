@@ -14,8 +14,8 @@
 <meta name="apple-mobile-web-app-title" content="Champignons">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://data.geopf.fr">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="leaflet.css">
+<script src="leaflet.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
@@ -143,6 +143,8 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .pop-sp li{display:flex;justify-content:space-between;gap:10px;padding:2px 0}
 
 .carte{height:430px;width:100%;border:1px solid var(--line);border-radius:4px;margin:4px 0 10px;background:var(--card);z-index:0}
+.leaflet-control-layers-toggle{background-image:none!important;width:36px;height:36px;position:relative}
+.leaflet-control-layers-toggle::after{content:"\2630";display:block;line-height:36px;text-align:center;font-size:19px;color:#333}
 .leaflet-bar a.loc{font-size:17px;line-height:30px;text-align:center;font-weight:700}
 .leaflet-bar a.loc.on{background:#4E7A2A;color:#fff}
 .moi{border-radius:50%;background:#2B6CB0;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
@@ -235,6 +237,18 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 </div>
 
 <script>
+/* Filet de sécurité : sur mobile il n'y a pas de console, donc toute erreur
+   non rattrapée s'affiche directement dans le bandeau de la page. */
+window.addEventListener("error", function(e){
+  var b = document.getElementById("status");
+  if (b && b.dataset.err !== "1"){
+    b.dataset.err = "1";
+    b.className = "status err";
+    b.textContent = "Erreur : " + (e.message || "inconnue") +
+                    (e.filename ? " (" + e.filename.split("/").pop() + ":" + e.lineno + ")" : "");
+  }
+});
+
 (function(){
 "use strict";
 
@@ -332,12 +346,4 @@ var SP = [
  conf:"Ne ramasse que les grands exemplaires à anneau coulissant : les petites lépiotes brunes sont mortelles."},
 {n:"Rosé des prés",h:{herbace:1},lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
  sais:[0,0,0,.10,.40,.50,.40,.50,.90,1,.40,.05],
- conf:"Lames roses puis brunes, jamais blanches : des lames restées blanches signent une amanite."},
-{n:"Marasme des Oréades",h:{herbace:1},lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
- sais:[0,0,.05,.30,.70,.80,.60,.60,.90,.90,.30,.05],
- conf:"Pousse en ronds de sorcières avec le clitocybe blanc, très toxique, aux lames serrées et décurrentes."},
-{n:"Coprin chevelu",h:{herbace:.9,ouvert:.8,peuplier:.6,feuillu:.4},lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
- sais:[0,0,.10,.30,.50,.40,.30,.40,.85,1,.70,.20],
- conf:""},
-{n:"Pleurote du panicaut",h:{herbace:1},lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
- sais:[0,0,0,.20,.50,.40,.20,.30,.70,.
+ conf:"Lam
