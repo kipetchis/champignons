@@ -1,7 +1,7 @@
 /* Service worker — carte des champignons.
    Incrémente VERSION à chaque modification d'un fichier précaché. */
 
-const VERSION = "v9";
+const VERSION = "v10";
 const SHELL = "champi-shell-" + VERSION;
 const RUNTIME = "champi-runtime-" + VERSION;
 const DATA = "champi-data-" + VERSION;
@@ -22,7 +22,7 @@ const A_PRECACHER = [
 ];
 
 const API = "api.open-meteo.com";
-const CDN = ["fonts.googleapis.com", "fonts.gstatic.com"];
+const CDN = ["fonts.googleapis.com", "fonts.gstatic.com", "cdn.jsdelivr.net"];
 const GEO = "data.geopf.fr";
 
 /* Les tuiles gardent un cache non versionné : elles ne changent pas
