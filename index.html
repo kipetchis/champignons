@@ -346,4 +346,757 @@ var SP = [
  conf:"Ne ramasse que les grands exemplaires à anneau coulissant : les petites lépiotes brunes sont mortelles."},
 {n:"Rosé des prés",h:{herbace:1},lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
  sais:[0,0,0,.10,.40,.50,.40,.50,.90,1,.40,.05],
- conf:"Lam
+ conf:"Lames roses puis brunes, jamais blanches : des lames restées blanches signent une amanite."},
+{n:"Marasme des Oréades",h:{herbace:1},lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
+ sais:[0,0,.05,.30,.70,.80,.60,.60,.90,.90,.30,.05],
+ conf:"Pousse en ronds de sorcières avec le clitocybe blanc, très toxique, aux lames serrées et décurrentes."},
+{n:"Coprin chevelu",h:{herbace:.9,ouvert:.8,peuplier:.6,feuillu:.4},lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
+ sais:[0,0,.10,.30,.50,.40,.30,.40,.85,1,.70,.20],
+ conf:""},
+{n:"Pleurote du panicaut",h:{herbace:1},lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
+ sais:[0,0,0,.20,.50,.40,.20,.30,.70,.90,.50,.10],
+ conf:""},
+{n:"Pholiote du peuplier",h:{peuplier:1,feuillu:.4},lat:"Cyclocybe aegerita",aff:"0110131000131",bes:0.7,
+ sais:[.20,.20,.40,.60,.60,.40,.30,.40,.70,.90,.80,.40],
+ conf:"Sur souche, la galérine marginée, mortelle, occupe les mêmes bois : ne mélange jamais deux récoltes."},
+{n:"Pleurote en huître",h:{peuplier:.9,feuillu:.8,hetre:.7,chene:.6},lat:"Pleurotus ostreatus",aff:"2222131222231",bes:0.7,
+ sais:[.40,.40,.30,.20,.10,.05,.05,.10,.40,.80,1,.70],
+ conf:""},
+{n:"Morille",h:{peuplier:.9,feuillu:.5,ouvert:.5},lat:"Morchella sp.",aff:"1001131001131",bes:0.9,
+ sais:[0,.10,.80,1,.40,0,0,0,0,0,0,0],
+ conf:"Toxique crue, et les gyromitres du printemps sont dangereux : cuisson longue obligatoire."},
+{n:"Truffe de Bourgogne",h:{chene:1,feuillu:.4},lat:"Tuber uncinatum",aff:"1000203001203",bes:1.0,
+ sais:[.20,0,0,0,0,0,0,0,.50,.80,1,.90],
+ conf:""},
+{n:"Clitocybe nébuleux",h:{hetre:.9,chene:.8,conifere:.8,pin:.8,feuillu:.8,chataignier:.7},lat:"Clitocybe nebularis",aff:"3212112323312",bes:0.9,
+ sais:[0,0,0,0,0,0,0,.10,.50,1,.90,.30],
+ conf:"L'entolome livide, très toxique, pousse au même endroit et à la même saison."},
+{n:"Amanite des Césars",h:{chene:1,chataignier:.9},lat:"Amanita caesarea",aff:"0001000221101",bes:1.0,
+ sais:[0,0,0,0,0,.30,.60,.90,.80,.40,0,0],
+ conf:"Jeune, en œuf, elle est indiscernable d'une amanite tue-mouches ou phalloïde sans ouvrir le voile."}
+];
+
+var NIV = [
+ {l:"très faible",v:"--s0"},
+ {l:"faible",v:"--s1"},
+ {l:"moyen",v:"--s2"},
+ {l:"bon",v:"--s3"},
+ {l:"très bon",v:"--s4"}
+];
+var NIV_SP = ["nulle","faible","possible","bonne","forte"];
+
+var CACHE_KEY = "champi-pluie-v2";
+var CACHE_MS = 3 * 60 * 60 * 1000;
+
+var elChips = document.getElementById("chips");
+var elToutes = document.getElementById("toutes");
+var elAnalyse = document.getElementById("analyse");
+var elIndice = document.getElementById("indice");
+var elReleve = document.getElementById("releve");
+var elHeure = document.getElementById("heure");
+var elRafraichir = document.getElementById("rafraichir");
+var elMois = document.getElementById("mois");
+var elPluie = document.getElementById("pluie");
+var elPluieOut = document.getElementById("pluieOut");
+var elReset = document.getElementById("reset");
+var elStatus = document.getElementById("status");
+var elLegend = document.getElementById("legend");
+var elLegendNote = document.getElementById("legendNote");
+var elPanel = document.getElementById("panel");
+var elRank = document.getElementById("rank");
+var elRankTitre = document.getElementById("rankTitre");
+var elRankSous = document.getElementById("rankSous");
+
+var carte = null;
+var pins = [];
+var coucheForet = null;
+var coucheParcelles = null;
+var gjBrut = null;
+var bboxInverse = false;
+var minuteur = null;
+var position = null;
+var suivi = false;
+var moi = null;
+var cercle = null;
+var releves = null;
+var horodatage = 0;
+var manuel = false;
+var sel = 7;
+var choix = [];
+
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function facteurPluie(mm, ret){
+  var eff = mm * ret;
+  var pf = (eff - 8) / 38;
+  if (pf < 0) pf = 0;
+  if (pf > 1) pf = 1;
+  if (eff > 115) pf = Math.max(0.55, 1 - (eff - 115) / 250);
+  return pf;
+}
+
+function pluieDe(i){
+  if (manuel || !releves) return +elPluie.value;
+  return releves[i].passe;
+}
+
+// Chance de trouver une espèce donnée dans un secteur donné, de 0 à 1.
+function chance(sp, i, mois){
+  var aff = (+sp.aff.charAt(i)) / 3;
+  if (!aff) return 0;
+  return aff * sp.sais[mois] * facteurPluie(pluieDe(i) / sp.bes, Z[i].ret);
+}
+
+// Potentiel global d'un secteur : la meilleure espèce compte double, les suivantes s'ajoutent.
+function potentiel(i, mois){
+  var vals = SP.map(function(sp){ return chance(sp, i, mois); }).sort(function(a, b){ return b - a; });
+  var s = vals[0] * 2;
+  for (var k = 1; k < 5; k++) s += vals[k];
+  return Math.min(10, s * 1.7);
+}
+
+function niveau(v){
+  if (v >= 6.5) return 4;
+  if (v >= 4.5) return 3;
+  if (v >= 2.8) return 2;
+  if (v >= 1.3) return 1;
+  return 0;
+}
+function niveauSp(p){
+  if (p >= 0.55) return 4;
+  if (p >= 0.35) return 3;
+  if (p >= 0.18) return 2;
+  if (p >= 0.07) return 1;
+  return 0;
+}
+
+/* Chances de trouver AU MOINS UNE des espèces cochées : on multiplie les
+   probabilités d'échec de chacune, et on prend le complément. */
+function chanceGroupe(i, mois){
+  var echec = 1;
+  for (var a = 0; a < choix.length; a++) echec *= (1 - chance(SP[choix[a]], i, mois));
+  return 1 - echec;
+}
+
+function nomsChoix(){
+  if (choix.length === 1) return SP[choix[0]].n.toLowerCase();
+  return "l\u2019une des " + choix.length + " espèces cochées";
+}
+
+function puces(){
+  elChips.innerHTML = SP.map(function(sp, k){
+    var on = choix.indexOf(k) !== -1;
+    return '<button type="button" class="chip' + (on ? " on" : "") + '" data-k="' + k +
+           '" aria-pressed="' + on + '">' + sp.n + '</button>';
+  }).join("");
+  var b = elChips.querySelectorAll(".chip");
+  for (var i = 0; i < b.length; i++){
+    (function(el){
+      el.addEventListener("click", function(){
+        var k = +el.dataset.k, p = choix.indexOf(k);
+        if (p === -1) choix.push(k); else choix.splice(p, 1);
+        puces();
+        dessine();
+      });
+    })(b[i]);
+  }
+  elToutes.hidden = (choix.length === 0);
+}
+
+function listeEspeces(i, mois){
+  var out = [];
+  for (var k = 0; k < SP.length; k++){
+    var p = chance(SP[k], i, mois);
+    if (p > 0.03) out.push({ k: k, p: p });
+  }
+  out.sort(function(a, b){ return b.p - a.p; });
+  return out.slice(0, 10);
+}
+
+function initCarte(){
+  carte = L.map("carte", { scrollWheelZoom: false, zoomControl: true });
+
+  var wmts = "https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile" +
+             "&TILEMATRIXSET=PM&STYLE=normal&TILECOL={x}&TILEROW={y}&TILEMATRIX={z}";
+  var ign = "© <a href=\"https://www.ign.fr/\">IGN</a> / Géoplateforme";
+
+  var plan = L.tileLayer(wmts + "&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&FORMAT=image/png",
+                         { maxZoom: 18, attribution: ign });
+  var photo = L.tileLayer(wmts + "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&FORMAT=image/jpeg",
+                          { maxZoom: 19, attribution: ign });
+
+  /* BD Forêt V2 : chaque peuplement de plus d'un demi-hectare,
+     avec son essence dominante. */
+  var foret = L.tileLayer.wms("https://data.geopf.fr/wms-r", {
+    layers: "LANDCOVER.FORESTINVENTORY.V2",
+    format: "image/png",
+    transparent: true,
+    version: "1.3.0",
+    opacity: 0.55,
+    maxZoom: 19,
+    attribution: "BD Forêt® V2 © IGN"
+  });
+
+  coucheForet = foret;
+  plan.addTo(carte);
+  foret.addTo(carte);
+  carte.on("moveend zoomend", planifieParcelles);
+
+  L.control.layers(
+    { "Plan IGN": plan, "Photo aérienne": photo },
+    { "BD Forêt V2 (essences)": foret },
+    { collapsed: true }
+  ).addTo(carte);
+
+  carte.fitBounds([[46.02, -0.90], [47.12, 1.18]]);
+  boutonPosition();
+}
+
+/* ---- Géolocalisation ---- */
+
+/* Distance à vol d'oiseau, en kilomètres. */
+function distanceKm(lat1, lon1, lat2, lon2){
+  var R = 6371, rad = Math.PI / 180;
+  var dLat = (lat2 - lat1) * rad, dLon = (lon2 - lon1) * rad;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(lat1 * rad) * Math.cos(lat2 * rad) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function boutonPosition(){
+  var Btn = L.Control.extend({
+    options: { position: "topleft" },
+    onAdd: function(){
+      var d = L.DomUtil.create("div", "leaflet-bar");
+      var a = L.DomUtil.create("a", "loc", d);
+      a.href = "#";
+      a.id = "btnLoc";
+      a.title = "Me localiser";
+      a.setAttribute("role", "button");
+      a.innerHTML = "◎";
+      L.DomEvent.on(a, "click", function(e){ L.DomEvent.stop(e); basculeSuivi(); });
+      return d;
+    }
+  });
+  carte.addControl(new Btn());
+
+  carte.on("locationfound", function(e){
+    position = e.latlng;
+    if (!moi){
+      moi = L.marker(e.latlng, {
+        icon: L.divIcon({ className: "", html: '<div class="moi" style="width:16px;height:16px"></div>',
+                          iconSize: [16, 16], iconAnchor: [8, 8] }),
+        interactive: false, zIndexOffset: 1000
+      }).addTo(carte);
+      cercle = L.circle(e.latlng, { radius: e.accuracy, color: "#2B6CB0", weight: 1,
+                                    fillColor: "#2B6CB0", fillOpacity: 0.10, interactive: false }).addTo(carte);
+    } else {
+      moi.setLatLng(e.latlng);
+      cercle.setLatLng(e.latlng).setRadius(e.accuracy);
+    }
+    dessine();
+  });
+
+  carte.on("locationerror", function(e){
+    suivi = false;
+    majBouton();
+    elIndice.hidden = false;
+    elIndice.textContent = "Position indisponible : " + e.message;
+  });
+}
+
+function majBouton(){
+  var a = document.getElementById("btnLoc");
+  if (a){
+    a.className = suivi ? "loc on" : "loc";
+    a.title = suivi ? "Arrêter le suivi" : "Me localiser";
+  }
+}
+
+function basculeSuivi(){
+  if (suivi){
+    carte.stopLocate();
+    suivi = false;
+  } else {
+    suivi = true;
+    carte.locate({ watch: true, setView: true, maxZoom: 14, enableHighAccuracy: true, timeout: 15000 });
+  }
+  majBouton();
+}
+
+/* ---- Analyse par peuplement (BD Forêt V2 via WFS) ---- */
+
+/* Traduit le libellé IGN du peuplement en étiquettes exploitables. */
+function tagsDe(p){
+  var txt = ((p.tfv || "") + " " + (p.essence || "") + " " + (p.tfv_g11 || "") + " " + (p.code_tfv || ""))
+            .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  var t = {};
+  function set(){ for (var i = 0; i < arguments.length; i++) t[arguments[i]] = true; }
+
+  if (txt.indexOf("chene") !== -1) set("chene", "feuillu");
+  if (txt.indexOf("chataignier") !== -1) set("chataignier", "feuillu");
+  if (txt.indexOf("hetre") !== -1) set("hetre", "feuillu");
+  if (txt.indexOf("bouleau") !== -1) set("bouleau", "feuillu");
+  if (txt.indexOf("peupl") !== -1) set("peuplier", "feuillu");
+  if (txt.indexOf("robinier") !== -1) set("feuillu");
+  if (txt.indexOf("pin") !== -1) set("pin", "conifere");
+  if (/sapin|epicea|douglas|meleze|cypres|cedre/.test(txt)) set("conifere");
+  if (txt.indexOf("conifere") !== -1) set("conifere");
+  if (txt.indexOf("feuillu") !== -1) set("feuillu");
+  if (txt.indexOf("melange") !== -1 || txt.indexOf("mixte") !== -1) set("feuillu", "conifere");
+  if (txt.indexOf("lande") !== -1) set("lande", "ouvert");
+  if (txt.indexOf("herbac") !== -1) set("herbace", "ouvert");
+  if (txt.indexOf("ouverte") !== -1) set("ouvert");
+
+  t.jeune = (txt.indexOf("jeune peuplement") !== -1 || txt.indexOf("coupe rase") !== -1);
+  t.libelle = p.tfv || p.essence || "Peuplement non renseigné";
+  return t;
+}
+
+/* Un jeune peuplement ou une lande produit moins qu'une futaie fermée. */
+function densite(t){
+  if (t.jeune) return 0.45;
+  if (t.herbace) return 1;
+  if (t.lande) return 0.7;
+  if (t.ouvert) return 0.8;
+  return 1;
+}
+
+function chanceParcelle(sp, t, i, mois){
+  var meilleur = 0;
+  for (var k in sp.h) if (t[k] && sp.h[k] > meilleur) meilleur = sp.h[k];
+  if (!meilleur) return 0;
+  return meilleur * densite(t) * sp.sais[mois] * facteurPluie(pluieDe(i) / sp.bes, Z[i].ret);
+}
+
+function scoreParcelle(t, i, mois){
+  if (choix.length){
+    var echec = 1;
+    for (var a = 0; a < choix.length; a++) echec *= (1 - chanceParcelle(SP[choix[a]], t, i, mois));
+    return (1 - echec) * 10;
+  }
+  var vals = SP.map(function(sp){ return chanceParcelle(sp, t, i, mois); })
+               .sort(function(a, b){ return b - a; });
+  var s = vals[0] * 2;
+  for (var k = 1; k < 5; k++) s += vals[k];
+  return Math.min(10, s * 1.7);
+}
+
+/* Le secteur le plus proche fournit la pluie et la rétention du sol. */
+function secteurProche(lat, lon){
+  var best = 0, d0 = Infinity;
+  for (var i = 0; i < Z.length; i++){
+    var dx = (Z[i].lon - lon) * 0.687, dy = Z[i].lat - lat;
+    var d = dx * dx + dy * dy;
+    if (d < d0){ d0 = d; best = i; }
+  }
+  return best;
+}
+
+/* Le WFS peut renvoyer les coordonnées en lat/lon selon l'interprétation
+   d'EPSG:4326. On détecte et on remet dans l'ordre attendu par Leaflet. */
+function premiereCoord(g){
+  var c = g && g.coordinates;
+  while (Array.isArray(c) && Array.isArray(c[0])) c = c[0];
+  return Array.isArray(c) ? c : null;
+}
+function inverse(c){
+  if (typeof c[0] === "number"){ var x = c[0]; c[0] = c[1]; c[1] = x; return; }
+  for (var i = 0; i < c.length; i++) inverse(c[i]);
+}
+function normalise(gj){
+  var f = (gj.features || []).find(function(x){ return x.geometry; });
+  var p = f && premiereCoord(f.geometry);
+  if (!p || Math.abs(p[0]) < 20) return gj;
+  (gj.features || []).forEach(function(x){ if (x.geometry) inverse(x.geometry.coordinates); });
+  return gj;
+}
+
+function videParcelles(){
+  if (coucheParcelles){ carte.removeLayer(coucheParcelles); coucheParcelles = null; }
+}
+
+function popupParcelle(t, i, mois, v){
+  var liste = SP.map(function(sp, k){ return { k: k, p: chanceParcelle(sp, t, i, mois) }; })
+                .filter(function(o){ return o.p > 0.04; })
+                .sort(function(a, b){ return b.p - a.p; })
+                .slice(0, 5);
+  var html = '<p class="pop-tfv">' + t.libelle + '</p>' +
+             '<strong>' + NIV[niveau(v)].l + '</strong> — secteur ' + Z[i].n;
+  if (liste.length){
+    html += '<ul class="pop-sp">' + liste.map(function(o){
+      var ns = niveauSp(o.p);
+      return '<li><span>' + SP[o.k].n + '</span><span style="color:' + css(NIV[ns].v) +
+             ';font-weight:600">' + NIV_SP[ns] + '</span></li>';
+    }).join("") + '</ul>';
+  }
+  return html;
+}
+
+function rendParcelles(){
+  if (!carte) return;
+  videParcelles();
+  if (!gjBrut || !elAnalyse.checked) return;
+  var mois = +elMois.value;
+  coucheParcelles = L.geoJSON(gjBrut, {
+    style: { weight: 0.5, color: "#3A3A34", fillOpacity: 0.6 },
+    onEachFeature: function(f, couche){
+      var c = couche.getBounds().getCenter();
+      var i = secteurProche(c.lat, c.lng);
+      var t = tagsDe(f.properties || {});
+      var v = scoreParcelle(t, i, mois);
+      couche.setStyle({ fillColor: css(NIV[niveau(v)].v) });
+      couche.bindPopup(popupParcelle(t, i, mois, v));
+    }
+  }).addTo(carte);
+  if (coucheParcelles.bringToBack) coucheParcelles.bringToBack();
+}
+
+function planifieParcelles(){
+  clearTimeout(minuteur);
+  minuteur = setTimeout(chargeParcelles, 450);
+}
+
+function chargeParcelles(reessai){
+  if (!elAnalyse.checked){ elIndice.hidden = true; videParcelles(); return; }
+  if (carte.getZoom() < 12){
+    elIndice.hidden = false;
+    elIndice.textContent = "Zoome encore un peu pour analyser les peuplements.";
+    gjBrut = null;
+    videParcelles();
+    return;
+  }
+  var b = carte.getBounds();
+  var bbox = bboxInverse
+    ? [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",")
+    : [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].join(",");
+
+  elIndice.hidden = false;
+  elIndice.textContent = "Lecture des peuplements…";
+
+  var url = "https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature" +
+            "&TYPENAMES=LANDCOVER.FORESTINVENTORY.V2:formation_vegetale" +
+            "&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326&COUNT=400" +
+            "&BBOX=" + bbox + ",EPSG:4326";
+
+  fetch(url).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function(gj){
+    var n = (gj.features || []).length;
+    if (!n && !reessai && !bboxInverse){ bboxInverse = true; chargeParcelles(true); return; }
+    gjBrut = normalise(gj);
+    elIndice.textContent = n
+      ? n + " peuplement" + (n > 1 ? "s" : "") + " analysé" + (n > 1 ? "s" : "") +
+        ". Touche une parcelle pour le détail."
+      : "Aucun peuplement forestier dans cette vue.";
+    rendParcelles();
+  }).catch(function(err){
+    gjBrut = null;
+    videParcelles();
+    elIndice.textContent = "Peuplements indisponibles (" + err.message + ").";
+  });
+}
+
+function majPins(scores){
+  if (!carte) return;
+  for (var p = 0; p < pins.length; p++) carte.removeLayer(pins[p]);
+  pins = [];
+  for (var i = 0; i < Z.length; i++){
+    var icone = L.divIcon({
+      className: "pin" + (i === sel ? " on" : ""),
+      html: '<span style="background:' + css(NIV[niveau(scores[i])].v) + '">' + (i + 1) + '</span>',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
+    });
+    var m = L.marker([Z[i].lat, Z[i].lon], { icon: icone, title: Z[i].n, riseOnHover: true });
+    (function(k){ m.on("click", function(){ sel = k; dessine(); }); })(i);
+    m.addTo(carte);
+    pins.push(m);
+  }
+}
+
+/* Passe la main à l'application de navigation du téléphone.
+   Android comprend geo:, iOS veut Apple Plans, le bureau ouvre le web. */
+function lienNav(z){
+  var q = z.lat.toFixed(5) + "," + z.lon.toFixed(5);
+  var nom = encodeURIComponent(z.n);
+  var ua = navigator.userAgent;
+  if (/iPad|iPhone|iPod/.test(ua)) return { href: "https://maps.apple.com/?daddr=" + q, ext: true };
+  if (/Android/.test(ua)) return { href: "geo:" + q + "?q=" + q + "(" + nom + ")", ext: false };
+  return { href: "https://www.google.com/maps/search/?api=1&query=" + q, ext: true };
+}
+
+function dessine(){
+  var mois = +elMois.value;
+  var nb = choix.length;
+  var scores = Z.map(function(_, i){
+    return nb ? chanceGroupe(i, mois) * 10 : potentiel(i, mois);
+  });
+
+  elPluieOut.textContent = elPluie.value + " mm";
+  elReset.hidden = !manuel || !releves;
+
+  majPins(scores);
+  rendParcelles();
+
+  elLegend.innerHTML = NIV.map(function(n){
+    return '<span><i class="dot" style="background:' + css(n.v) + '"></i>' + n.l + '</span>';
+  }).join("");
+  elLegendNote.textContent = nb
+    ? "Couleurs : chances de trouver " + nomsChoix() + " en " + MOIS[mois] + "."
+    : "Couleurs : potentiel toutes espèces confondues. Coche des espèces pour voir leur répartition.";
+
+  var z = Z[sel], v = scores[sel], n = NIV[niveau(v)];
+  var mm = Math.round(pluieDe(sel));
+  var prev = (releves && !manuel) ? Math.round(releves[sel].avenir) : null;
+  var ligne = "Pluie retenue " + mm + " mm sur quinze jours";
+  if (position) ligne = "À " + Math.round(distanceKm(position.lat, position.lng, z.lat, z.lon)) +
+                        " km de toi. " + ligne;
+  if (prev !== null) ligne += ", " + prev + " mm annoncés sur sept jours";
+
+  var nav = lienNav(z);
+  var liste = listeEspeces(sel, mois);
+  var htmlSp;
+  if (!liste.length){
+    htmlSp = '<p class="sp-vide">Rien d\u2019attendu ici en ' + MOIS[mois] + ' avec ce niveau de pluie.</p>';
+  } else {
+    htmlSp = '<ul class="sp">' + liste.map(function(o){
+      var e = SP[o.k], ns = niveauSp(o.p), col = css(NIV[ns].v);
+      var actif = (choix.indexOf(o.k) !== -1) ? ' class="on"' : '';
+      return '<li' + actif + '><div class="sp-top"><span class="sp-nom">' + e.n +
+             ' <span class="sp-lat">' + e.lat + '</span></span>' +
+             '<span class="sp-lab" style="color:' + col + '">' + NIV_SP[ns] + '</span></div>' +
+             '<div class="bar"><i style="width:' + Math.round(o.p * 100) + '%;background:' + col + '"></i></div>' +
+             (e.conf ? '<p class="sp-conf">' + e.conf + '</p>' : '') +
+             '</li>';
+    }).join("") + '</ul>';
+  }
+
+  elPanel.innerHTML =
+    '<div class="panel-head"><h2>' + (sel + 1) + ". " + z.n + '</h2>' +
+    '<span class="badge" style="background:' + css(n.v) + '">' + n.l + '</span></div>' +
+    '<p class="sub">' + z.dep + '</p>' +
+    '<dl><dt>Sol</dt><dd>' + z.sol + '</dd>' +
+    '<dt>Essences</dt><dd>' + z.ess + '</dd>' +
+    '<dt>Sur le terrain</dt><dd>' + z.tip + '</dd></dl>' +
+    '<h3>Ce qu\u2019on peut y trouver en ' + MOIS[mois] + '</h3>' + htmlSp +
+    '<p class="meter">Indice du secteur <b>' + v.toFixed(1) + '</b> sur 10. ' + ligne + '.</p>' +
+    '<p style="margin:0"><a class="aller" href="' + nav.href + '"' +
+    (nav.ext ? ' target="_blank" rel="noopener"' : '') +
+    '>➜ Y aller</a></p>';
+
+  var ordre = Z.map(function(_, i){ return i; }).sort(function(a, b){ return scores[b] - scores[a]; }).slice(0, 5);
+  elRankTitre.textContent = nb ? "Où trouver " + nomsChoix() : "Les meilleurs secteurs en ce moment";
+  elRankSous.textContent = nb
+    ? "Classement pour cette sélection en " + MOIS[mois] + "."
+    : "Toutes espèces confondues, en " + MOIS[mois] + ".";
+  elRank.innerHTML = ordre.map(function(i){
+    var lab = nb ? NIV_SP[niveauSp(scores[i] / 10)] : scores[i].toFixed(1);
+    var km = position
+      ? ' <span class="dist">· ' + Math.round(distanceKm(position.lat, position.lng, Z[i].lat, Z[i].lon)) + ' km</span>'
+      : '';
+    return '<li><button type="button" data-i="' + i + '">' + (i + 1) + ". " + Z[i].n + km + '</button>' +
+           '<span class="val" style="color:' + css(NIV[niveau(scores[i])].v) + '">' + lab + '</span></li>';
+  }).join("");
+
+  var btns = elRank.querySelectorAll("button");
+  for (var b = 0; b < btns.length; b++){
+    (function(el){
+      el.addEventListener("click", function(){
+        sel = +el.dataset.i; dessine();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    })(btns[b]);
+  }
+}
+
+function moyennePassee(){
+  return releves.reduce(function(s, r){ return s + r.passe; }, 0) / releves.length;
+}
+
+function heureCourte(t){
+  var d = new Date(t);
+  return String(d.getHours()).padStart(2, "0") + "h" + String(d.getMinutes()).padStart(2, "0");
+}
+
+function majStatut(){
+  if (!releves) return;
+  elReleve.hidden = false;
+  elHeure.textContent = heureCourte(horodatage);
+  var moy = moyennePassee();
+  var avenir = releves.reduce(function(s, r){ return s + r.avenir; }, 0) / releves.length;
+  var etat;
+  if (moy < 12) etat = "Sols encore secs, rien n\u2019est lancé";
+  else if (moy < 30) etat = "Il a plu, mais pas assez partout";
+  else if (moy < 60) etat = "Conditions correctes, ça pousse dans les sols qui retiennent";
+  else etat = "Bonnes conditions, la poussée est en cours";
+  elStatus.className = "status";
+  elStatus.innerHTML = "<strong>" + etat + ".</strong> " + Math.round(moy) +
+    " mm en moyenne sur les quinze derniers jours, " + Math.round(avenir) +
+    " mm annoncés sur les sept prochains. Le curseur suit ces relevés, secteur par secteur.";
+}
+
+function charge(force){
+  var cache = null;
+  if (!force){
+    try { cache = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch(e){}
+  }
+  if (cache && cache.t && (Date.now() - cache.t) < CACHE_MS && cache.d && cache.d.length === Z.length){
+    releves = cache.d;
+    horodatage = cache.t;
+    elPluie.value = Math.round(moyennePassee());
+    majStatut();
+    dessine();
+    return;
+  }
+
+  var url = "https://api.open-meteo.com/v1/forecast?latitude=" +
+            Z.map(function(z){ return z.lat; }).join(",") +
+            "&longitude=" + Z.map(function(z){ return z.lon; }).join(",") +
+            "&daily=precipitation_sum&past_days=15&forecast_days=7&timezone=Europe%2FParis";
+
+  fetch(url).then(function(r){
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    return r.json();
+  }).then(function(data){
+    var lots = Array.isArray(data) ? data : [data];
+    if (lots.length !== Z.length) throw new Error("réponse incomplète");
+    var a = new Date();
+    var cle = a.getFullYear() + "-" + String(a.getMonth() + 1).padStart(2, "0") + "-" + String(a.getDate()).padStart(2, "0");
+    releves = lots.map(function(l){
+      var t = l.daily.time, p = l.daily.precipitation_sum;
+      var pivot = t.indexOf(cle);
+      if (pivot < 0) pivot = 15;
+      var passe = 0, avenir = 0;
+      for (var i = 0; i < t.length; i++){
+        var val = (typeof p[i] === "number") ? p[i] : 0;
+        if (i < pivot) passe += val; else avenir += val;
+      }
+      return { passe: passe, avenir: avenir };
+    });
+    horodatage = Date.now();
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: horodatage, d: releves })); } catch(e){}
+    elPluie.value = Math.round(moyennePassee());
+    majStatut();
+    dessine();
+  }).catch(function(err){
+    releves = null;
+    manuel = true;
+    elStatus.className = "status err";
+    elStatus.innerHTML = "<strong>Relevés de pluie indisponibles</strong> (" + err.message +
+      "). Règle le curseur à la main avec le cumul des quinze derniers jours.";
+    dessine();
+  });
+}
+
+puces();
+
+for (var m = 0; m < 12; m++){
+  var om = document.createElement("option");
+  om.value = m;
+  om.textContent = MOIS[m];
+  elMois.appendChild(om);
+}
+elMois.value = new Date().getMonth();
+
+elToutes.addEventListener("click", function(){
+  choix = [];
+  puces();
+  dessine();
+});
+
+elRafraichir.addEventListener("click", function(){
+  elRafraichir.textContent = "Actualisation…";
+  charge(true);
+  setTimeout(function(){ elRafraichir.textContent = "Actualiser"; }, 1500);
+});
+
+/* Au retour sur l'onglet, on rappelle l'API si les relevés ont vieilli. */
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState === "visible" && horodatage && (Date.now() - horodatage) > CACHE_MS){
+    charge(true);
+  }
+});
+
+elAnalyse.addEventListener("change", function(){
+  if (coucheForet) coucheForet.setOpacity(elAnalyse.checked ? 0 : 0.55);
+  if (elAnalyse.checked) chargeParcelles();
+  else { elIndice.hidden = true; videParcelles(); }
+});
+
+elMois.addEventListener("change", dessine);
+elPluie.addEventListener("input", function(){ manuel = true; dessine(); });
+elReset.addEventListener("click", function(){
+  manuel = false;
+  if (releves) elPluie.value = Math.round(moyennePassee());
+  dessine();
+});
+if (window.matchMedia){
+  var mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", dessine);
+}
+
+dessine();
+charge();
+
+/* La carte vient en dernier et sous filet : si Leaflet manque ou qu'un
+   bloqueur l'empêche de charger, le reste de la page continue de marcher. */
+try {
+  if (typeof L === "undefined") throw new Error("Leaflet n'a pas pu être chargé");
+  initCarte();
+  dessine();
+} catch (err) {
+  var boite = document.getElementById("carte");
+  if (boite){
+    boite.style.height = "auto";
+    boite.style.padding = "18px";
+    boite.textContent = "Carte indisponible : " + err.message +
+      ". Le reste de l'application fonctionne normalement.";
+  }
+}
+})();
+
+/* Service worker : installation, et bandeau quand une nouvelle version attend. */
+(function(){
+"use strict";
+if (!("serviceWorker" in navigator)) return;
+
+var maj = document.getElementById("maj");
+var majBtn = document.getElementById("majBtn");
+var rechargement = false;
+
+navigator.serviceWorker.addEventListener("controllerchange", function(){
+  if (rechargement) return;
+  rechargement = true;
+  window.location.reload();
+});
+
+window.addEventListener("load", function(){
+  navigator.serviceWorker.register("sw.js").then(function(reg){
+    function surveille(sw){
+      if (!sw) return;
+      sw.addEventListener("statechange", function(){
+        if (sw.state === "installed" && navigator.serviceWorker.controller){
+          maj.hidden = false;
+        }
+      });
+    }
+    if (reg.waiting && navigator.serviceWorker.controller) maj.hidden = false;
+    surveille(reg.installing);
+    reg.addEventListener("updatefound", function(){ surveille(reg.installing); });
+
+    majBtn.addEventListener("click", function(){
+      var cible = reg.waiting || reg.installing;
+      if (cible) cible.postMessage("skipWaiting");
+      else window.location.reload();
+    });
+
+    setInterval(function(){ reg.update(); }, 60 * 60 * 1000);
+  }).catch(function(){});
+});
+})();
+</script>
+</body>
+</html>
