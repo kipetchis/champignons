@@ -147,6 +147,7 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .leaflet-control-layers-toggle::after{content:"\2630";display:block;line-height:36px;text-align:center;font-size:19px;color:#333}
 .leaflet-bar a.loc{font-size:17px;line-height:30px;text-align:center;font-weight:700}
 .leaflet-bar a.loc.on{background:#4E7A2A;color:#fff}
+.leaflet-bar a.loc.demi{color:#4E7A2A}
 .moi{border-radius:50%;background:#2B6CB0;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
 .dist{color:var(--ink-3);font-weight:400;font-size:13px}
 
@@ -188,7 +189,7 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
     <select id="mois"></select>
   </div>
   <div class="field">
-    <label for="pluie">Pluie</label>
+    <label for="pluie">Pluie 15 j</label>
     <input type="range" id="pluie" min="0" max="140" step="1" value="25">
     <span class="readout" id="pluieOut">25 mm</span>
   </div>
@@ -413,9 +414,12 @@ var coucheForet = null;
 var coucheParcelles = null;
 var gjBrut = null;
 var bboxInverse = false;
+var bboxChargee = null;
+var sigRendu = null;
 var minuteur = null;
 var position = null;
 var suivi = false;
+var centreSurMoi = true;
 var moi = null;
 var cercle = null;
 var releves = null;
@@ -581,8 +585,15 @@ function boutonPosition(){
   });
   carte.addControl(new Btn());
 
+  /* Un déplacement à la main suspend le recentrage automatique. */
+  carte.on("dragstart", function(){
+    if (suivi && centreSurMoi){ centreSurMoi = false; majBouton(); }
+  });
+
   carte.on("locationfound", function(e){
+    var premier = !moi;
     position = e.latlng;
+    if (centreSurMoi) carte.setView(e.latlng, Math.max(carte.getZoom(), premier ? 14 : carte.getZoom()));
     if (!moi){
       moi = L.marker(e.latlng, {
         icon: L.divIcon({ className: "", html: '<div class="moi" style="width:16px;height:16px"></div>',
@@ -595,7 +606,9 @@ function boutonPosition(){
       moi.setLatLng(e.latlng);
       cercle.setLatLng(e.latlng).setRadius(e.accuracy);
     }
-    dessine();
+    /* On ne redessine qu'au premier point : sinon chaque rafraîchissement
+       du GPS reconstruirait la carte et fermerait la fiche ouverte. */
+    if (premier) dessine();
   });
 
   carte.on("locationerror", function(e){
@@ -608,19 +621,29 @@ function boutonPosition(){
 
 function majBouton(){
   var a = document.getElementById("btnLoc");
-  if (a){
-    a.className = suivi ? "loc on" : "loc";
-    a.title = suivi ? "Arrêter le suivi" : "Me localiser";
-  }
+  if (!a) return;
+  if (!suivi){ a.className = "loc"; a.title = "Me localiser"; }
+  else if (centreSurMoi){ a.className = "loc on"; a.title = "Arrêter le suivi"; }
+  else { a.className = "loc demi"; a.title = "Revenir sur ma position"; }
 }
 
+/* Trois comportements sur le même bouton :
+   éteint → on démarre et on centre ;
+   allumé mais carte déplacée → on revient sur la position ;
+   allumé et déjà centré → on arrête le suivi. */
 function basculeSuivi(){
-  if (suivi){
+  if (!suivi){
+    suivi = true;
+    centreSurMoi = true;
+    carte.locate({ watch: true, setView: false, enableHighAccuracy: true, timeout: 15000 });
+  } else if (!centreSurMoi){
+    centreSurMoi = true;
+    if (position) carte.setView(position, Math.max(carte.getZoom(), 14));
+  } else {
     carte.stopLocate();
     suivi = false;
-  } else {
-    suivi = true;
-    carte.locate({ watch: true, setView: true, maxZoom: 14, enableHighAccuracy: true, timeout: 15000 });
+    if (moi){ carte.removeLayer(moi); moi = null; }
+    if (cercle){ carte.removeLayer(cercle); cercle = null; }
   }
   majBouton();
 }
@@ -734,10 +757,18 @@ function popupParcelle(t, i, mois, v){
   return html;
 }
 
-function rendParcelles(){
+function signatureParcelles(){
+  return elMois.value + "|" + choix.slice().sort().join(",") + "|" +
+         (manuel ? "m" + elPluie.value : "auto" + horodatage);
+}
+
+function rendParcelles(force){
   if (!carte) return;
+  if (!gjBrut || !elAnalyse.checked){ videParcelles(); return; }
+  var sig = signatureParcelles();
+  if (!force && coucheParcelles && sig === sigRendu) return;
+  sigRendu = sig;
   videParcelles();
-  if (!gjBrut || !elAnalyse.checked) return;
   var mois = +elMois.value;
   coucheParcelles = L.geoJSON(gjBrut, {
     style: { weight: 0.5, color: "#3A3A34", fillOpacity: 0.6 },
@@ -747,7 +778,13 @@ function rendParcelles(){
       var t = tagsDe(f.properties || {});
       var v = scoreParcelle(t, i, mois);
       couche.setStyle({ fillColor: css(NIV[niveau(v)].v) });
-      couche.bindPopup(popupParcelle(t, i, mois, v));
+      couche.bindPopup(popupParcelle(t, i, mois, v), {
+        autoPan: false,      /* sinon la carte bouge, ce qui relancerait une requête */
+        closeOnClick: false, /* seule la croix ou une autre parcelle la ferme */
+        autoClose: true,
+        closeButton: true,
+        maxWidth: 260
+      });
     }
   }).addTo(carte);
   if (coucheParcelles.bringToBack) coucheParcelles.bringToBack();
@@ -768,6 +805,10 @@ function chargeParcelles(reessai){
     return;
   }
   var b = carte.getBounds();
+  if (!reessai && bboxChargee && bboxChargee.contains(b) && gjBrut){
+    rendParcelles();
+    return;
+  }
   var bbox = bboxInverse
     ? [b.getWest(), b.getSouth(), b.getEast(), b.getNorth()].join(",")
     : [b.getSouth(), b.getWest(), b.getNorth(), b.getEast()].join(",");
@@ -787,11 +828,12 @@ function chargeParcelles(reessai){
     var n = (gj.features || []).length;
     if (!n && !reessai && !bboxInverse){ bboxInverse = true; chargeParcelles(true); return; }
     gjBrut = normalise(gj);
+    bboxChargee = b;
     elIndice.textContent = n
       ? n + " peuplement" + (n > 1 ? "s" : "") + " analysé" + (n > 1 ? "s" : "") +
         ". Touche une parcelle pour le détail."
       : "Aucun peuplement forestier dans cette vue.";
-    rendParcelles();
+    rendParcelles(true);
   }).catch(function(err){
     gjBrut = null;
     videParcelles();
@@ -835,6 +877,9 @@ function dessine(){
     return nb ? chanceGroupe(i, mois) * 10 : potentiel(i, mois);
   });
 
+  /* Hors mode manuel, le curseur affiche la pluie du secteur sélectionné,
+     et non plus une moyenne : c'est ce chiffre qui sert au calcul. */
+  if (!manuel && releves) elPluie.value = Math.round(releves[sel].passe);
   elPluieOut.textContent = elPluie.value + " mm";
   elReset.hidden = !manuel || !releves;
 
