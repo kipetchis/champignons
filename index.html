@@ -1043,11 +1043,7 @@ charge();
 
 /* La carte vient en dernier et sous filet : si Leaflet manque ou qu'un
    bloqueur l'empêche de charger, le reste de la page continue de marcher. */
-try {
-  if (typeof L === "undefined") throw new Error("Leaflet n'a pas pu être chargé");
-  initCarte();
-  dessine();
-} catch (err) {
+function echecCarte(err){
   var boite = document.getElementById("carte");
   if (boite){
     boite.style.height = "auto";
@@ -1056,6 +1052,39 @@ try {
       ". Le reste de l'application fonctionne normalement.";
   }
 }
+
+function demarreCarte(){
+  try { initCarte(); dessine(); }
+  catch (err) { echecCarte(err); }
+}
+
+/* Si le fichier leaflet.js local manque ou est incomplet, on va le chercher
+   en ligne plutôt que de renoncer à la carte. */
+function leafletDeSecours(){
+  var boite = document.getElementById("carte");
+  if (boite){
+    boite.style.padding = "18px";
+    boite.textContent = "Chargement de la carte en ligne…";
+  }
+  var feuille = document.createElement("link");
+  feuille.rel = "stylesheet";
+  feuille.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css";
+  document.head.appendChild(feuille);
+
+  var sc = document.createElement("script");
+  sc.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+  sc.onload = function(){
+    if (boite){ boite.textContent = ""; boite.style.padding = ""; boite.style.height = ""; }
+    demarreCarte();
+  };
+  sc.onerror = function(){
+    echecCarte(new Error("Leaflet introuvable, ni en local ni en ligne"));
+  };
+  document.head.appendChild(sc);
+}
+
+if (typeof L === "undefined") leafletDeSecours();
+else demarreCarte();
 })();
 
 /* Service worker : installation, et bandeau quand une nouvelle version attend. */
