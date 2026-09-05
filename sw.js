@@ -1,7 +1,7 @@
 /* Service worker — carte des champignons.
    Incrémente VERSION à chaque modification d'un fichier précaché. */
 
-const VERSION = "v11";
+const VERSION = "v12";
 const SHELL = "champi-shell-" + VERSION;
 const RUNTIME = "champi-runtime-" + VERSION;
 const DATA = "champi-data-" + VERSION;

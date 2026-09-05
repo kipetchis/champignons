@@ -164,7 +164,9 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .chip{font:inherit;font-size:13px;line-height:1.3;background:var(--card);color:var(--ink-2);border:1px solid var(--line-2);border-radius:999px;padding:5px 11px;cursor:pointer}
 .chip:hover{border-color:var(--ink-3);color:var(--ink)}
 .chip.on{background:var(--moss);border-color:var(--moss);color:var(--on-s);font-weight:600}
-.releve{font-size:13px;color:var(--ink-3);margin:-16px 0 22px}
+.releve{font-size:13px;color:var(--ink-3);margin:-16px 0 22px;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.rafr{font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);background:var(--card);border:1px solid var(--line-2);border-radius:3px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+.rafr:hover{color:var(--ink);border-color:var(--ink-3)}
 .releve[hidden]{display:none}
 
 .maj{position:fixed;left:16px;right:16px;bottom:16px;max-width:420px;margin:0 auto;background:var(--ink);color:var(--paper);border-radius:4px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-size:14px;box-shadow:0 6px 24px rgba(0,0,0,.22);z-index:10}
@@ -181,7 +183,7 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 <p class="lede">Treize secteurs des Deux-Sèvres et de la Vienne, vingt espèces, croisés avec la pluie réellement tombée sur chaque secteur ces quinze derniers jours, la capacité des sols à la retenir, les essences présentes et la saison.</p>
 
 <p class="status" id="status">Relevé des pluies en cours…</p>
-<p class="releve" id="releve" hidden>Relevés récupérés à <span id="heure"></span>. <button type="button" class="lien" id="rafraichir">Actualiser</button></p>
+<p class="releve" id="releve" hidden><span id="heure"></span> <button type="button" class="rafr" id="rafraichir">↻ Actualiser</button></p>
 
 <div class="controls">
   <div class="field">
@@ -424,6 +426,7 @@ var moi = null;
 var cercle = null;
 var releves = null;
 var horodatage = 0;
+var periode = null;
 var manuel = false;
 var sel = 7;
 var choix = [];
@@ -966,10 +969,26 @@ function heureCourte(t){
   return String(d.getHours()).padStart(2, "0") + "h" + String(d.getMinutes()).padStart(2, "0");
 }
 
+/* "2026-08-21" -> "21 août" */
+function jourCourt(iso){
+  var p = String(iso).split("-");
+  var mois = ["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+  return parseInt(p[2], 10) + " " + mois[parseInt(p[1], 10) - 1];
+}
+
+function ancienne(){
+  var min = Math.round((Date.now() - horodatage) / 60000);
+  if (min < 1) return "à l\u2019instant";
+  if (min < 60) return "il y a " + min + " min";
+  var h = Math.round(min / 60);
+  return "il y a " + h + " h";
+}
+
 function majStatut(){
   if (!releves) return;
   elReleve.hidden = false;
-  elHeure.textContent = heureCourte(horodatage);
+  elHeure.textContent = (periode ? "Pluie relevée du " + jourCourt(periode[0]) + " au " + jourCourt(periode[1]) + ". " : "") +
+                        "Données récupérées " + ancienne() + ", à " + heureCourte(horodatage) + ".";
   var moy = moyennePassee();
   var avenir = releves.reduce(function(s, r){ return s + r.avenir; }, 0) / releves.length;
   var etat;
@@ -991,6 +1010,7 @@ function charge(force){
   if (cache && cache.t && (Date.now() - cache.t) < CACHE_MS && cache.d && cache.d.length === Z.length){
     releves = cache.d;
     horodatage = cache.t;
+    periode = cache.p || null;
     elPluie.value = Math.round(moyennePassee());
     majStatut();
     dessine();
@@ -1021,8 +1041,11 @@ function charge(force){
       }
       return { passe: passe, avenir: avenir };
     });
+    var t0 = lots[0].daily.time;
+    var pv = t0.indexOf(cle); if (pv < 0) pv = 15;
+    periode = [t0[0], t0[pv - 1]];
     horodatage = Date.now();
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: horodatage, d: releves })); } catch(e){}
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: horodatage, d: releves, p: periode })); } catch(e){}
     elPluie.value = Math.round(moyennePassee());
     majStatut();
     dessine();
@@ -1053,9 +1076,14 @@ elToutes.addEventListener("click", function(){
 });
 
 elRafraichir.addEventListener("click", function(){
+  elRafraichir.disabled = true;
   elRafraichir.textContent = "Actualisation…";
+  manuel = false;
   charge(true);
-  setTimeout(function(){ elRafraichir.textContent = "Actualiser"; }, 1500);
+  setTimeout(function(){
+    elRafraichir.disabled = false;
+    elRafraichir.textContent = "↻ Actualiser";
+  }, 1800);
 });
 
 /* Au retour sur l'onglet, on rappelle l'API si les relevés ont vieilli. */
