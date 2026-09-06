@@ -139,6 +139,12 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .trouv button{font:inherit;font-size:13px;background:none;border:none;color:var(--ink-3);cursor:pointer;padding:0}
 .trouv button:hover{color:var(--warn)}
 .deja{font-size:12px;font-weight:600;color:var(--moss);white-space:nowrap}
+.fenetre{margin:16px 0 0;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:4px}
+.fenetre h4{font-size:13px;font-weight:600;color:var(--ink-3);margin:0 0 2px}
+.fenetre .quand{font-size:16px;color:var(--ink);margin:0 0 8px}
+.fenetre .quand b{font-weight:600}
+.spark{width:100%;max-width:230px;display:block;color:var(--ink-3)}
+.fenetre .avert{font-size:12px;color:var(--ink-3);margin:6px 0 0}
 .compte{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px;margin:0 0 16px}
 .compte[hidden]{display:none}
 .compte h3{font-size:14px;font-weight:600;color:var(--ink);margin:0 0 4px}
@@ -567,7 +573,7 @@ var NIV = [
 ];
 var NIV_SP = ["nulle","faible","possible","bonne","forte"];
 
-var CACHE_KEY = "champi-pluie-v3";
+var CACHE_KEY = "champi-pluie-v4";
 var CARNET_KEY = "champi-carnet-v1";
 var SESSION_KEY = "champi-session-v1";
 
@@ -672,19 +678,100 @@ function bonusCarnet(k, lat, lon){
   return n ? Math.min(0.4, 0.16 * n) : 0;
 }
 
-function chance(sp, i, mois){
+function chance(sp, i, mois, mm){
   var aff = (+sp.aff.charAt(i)) / 3;
   if (!aff) return 0;
-  var p = aff * sp.sais[mois] * facteurPluie(pluieDe(i) / sp.bes, Z[i].ret);
+  var pluie = (mm === undefined) ? pluieDe(i) : mm;
+  var p = aff * sp.sais[mois] * facteurPluie(pluie / sp.bes, Z[i].ret);
   return Math.min(1, p * (1 + bonusCarnet(SP.indexOf(sp), Z[i].lat, Z[i].lon)));
 }
 
 // Potentiel global d'un secteur : la meilleure espèce compte double, les suivantes s'ajoutent.
-function potentiel(i, mois){
-  var vals = SP.map(function(sp){ return chance(sp, i, mois); }).sort(function(a, b){ return b - a; });
+function potentiel(i, mois, mm){
+  var vals = SP.map(function(sp){ return chance(sp, i, mois, mm); }).sort(function(a, b){ return b - a; });
   var s = vals[0] * 2;
   for (var k = 1; k < 5; k++) s += vals[k];
   return Math.min(10, s * 1.7);
+}
+
+/* ---- Fenêtre favorable ----
+   Un carpophore met huit à quinze jours à sortir après la pluie.
+   Pour une date D, la pluie qui compte est donc celle tombée entre
+   D-15 et D-5, et non celle des tout derniers jours. */
+var HORIZON = 15;
+
+function pluieMotrice(r, k){
+  if (!r || !r.jours) return 0;
+  var D = r.pivot + k, somme = 0;
+  for (var j = D - 15; j <= D - 5; j++){
+    if (j >= 0 && j < r.jours.length) somme += r.jours[j];
+  }
+  return somme;
+}
+
+/* Nombre de jours au-delà desquels on n'a plus de prévision :
+   la suite suppose qu'il ne tombe plus rien, donc pessimiste. */
+function horsPrevision(r, k){
+  return (r.pivot + k - 5) >= r.jours.length;
+}
+
+function indiceJour(i, k){
+  var r = releves[i];
+  var d = new Date();
+  d.setDate(d.getDate() + k);
+  var mois = d.getMonth();
+  var mm = pluieMotrice(r, k);
+  return choix.length ? chanceGroupe(i, mois, mm) * 10 : potentiel(i, mois, mm);
+}
+
+function courbe(i){
+  var out = [];
+  for (var k = 0; k < HORIZON; k++) out.push(indiceJour(i, k));
+  return out;
+}
+
+/* La meilleure fenêtre est la plus longue suite de jours au-dessus
+   du seuil, celui-ci étant relatif au maximum de la période. */
+function fenetre(c){
+  var max = Math.max.apply(null, c);
+  if (max < 1.3) return null;
+  var seuil = Math.max(1.3, max * 0.8);
+  var meilleur = null, debut = -1;
+  for (var k = 0; k <= c.length; k++){
+    var dedans = k < c.length && c[k] >= seuil;
+    if (dedans && debut < 0) debut = k;
+    if (!dedans && debut >= 0){
+      if (!meilleur || (k - debut) > (meilleur[1] - meilleur[0] + 1)) meilleur = [debut, k - 1];
+      debut = -1;
+    }
+  }
+  return meilleur;
+}
+
+function dateDans(k){
+  var d = new Date();
+  d.setDate(d.getDate() + k);
+  return d;
+}
+
+function jourTexte(k){
+  var d = dateDans(k);
+  var m = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  return d.getDate() + " " + m[d.getMonth()];
+}
+
+function sparkline(c){
+  var l = 9, e = 2, h = 30;
+  var barres = c.map(function(v, k){
+    var haut = Math.max(2, Math.round(v / 10 * h));
+    return '<rect x="' + (k * (l + e)) + '" y="' + (h - haut) + '" width="' + l +
+           '" height="' + haut + '" rx="1.5" fill="' + css(NIV[niveau(v)].v) + '"/>';
+  }).join("");
+  return '<svg class="spark" viewBox="0 0 ' + (c.length * (l + e)) + ' ' + (h + 12) +
+         '" role="img" aria-label="Évolution des chances sur quinze jours">' + barres +
+         '<text x="0" y="' + (h + 10) + '" fill="currentColor" font-size="8">aujourd’hui</text>' +
+         '<text x="' + (c.length * (l + e)) + '" y="' + (h + 10) +
+         '" text-anchor="end" fill="currentColor" font-size="8">+14 j</text></svg>';
 }
 
 function niveau(v){
@@ -704,9 +791,9 @@ function niveauSp(p){
 
 /* Chances de trouver AU MOINS UNE des espèces cochées : on multiplie les
    probabilités d'échec de chacune, et on prend le complément. */
-function chanceGroupe(i, mois){
+function chanceGroupe(i, mois, mm){
   var echec = 1;
-  for (var a = 0; a < choix.length; a++) echec *= (1 - chance(SP[choix[a]], i, mois));
+  for (var a = 0; a < choix.length; a++) echec *= (1 - chance(SP[choix[a]], i, mois, mm));
   return 1 - echec;
 }
 
@@ -1381,6 +1468,31 @@ function dessine(){
   if (prev !== null) ligne += ", " + prev + " mm annoncés sur sept jours";
 
   var nav = lienNav(z);
+
+  /* Fenêtre favorable : uniquement si l'on dispose des relevés réels. */
+  var htmlFen = "";
+  if (releves && releves[sel].jours && !manuel){
+    var c = courbe(sel);
+    var f = fenetre(c);
+    var titre = choix.length ? "Quand y aller pour " + nomsChoix() : "Quand y aller";
+    var phrase;
+    if (!f){
+      phrase = "Rien d’attendu ici dans les quinze jours qui viennent.";
+    } else if (f[0] === 0 && f[1] >= 13){
+      phrase = "<b>Dès maintenant</b>, et ça devrait tenir toute la quinzaine.";
+    } else if (f[0] === 0){
+      phrase = "<b>Dès maintenant, jusqu’au " + jourTexte(f[1]) + "</b>.";
+    } else if (f[0] === f[1]){
+      phrase = "<b>Le " + jourTexte(f[0]) + "</b>.";
+    } else {
+      phrase = "<b>Entre le " + jourTexte(f[0]) + " et le " + jourTexte(f[1]) + "</b>.";
+    }
+    var flou = f && horsPrevision(releves[sel], f[1]);
+    htmlFen = '<div class="fenetre"><h4>' + titre + '</h4>' +
+              '<p class="quand">' + phrase + '</p>' + sparkline(c) +
+              (flou ? '<p class="avert">La fin de la période dépasse l’horizon des prévisions : elle suppose qu’il ne tombe plus rien, donc plutôt pessimiste.</p>' : '') +
+              '</div>';
+  }
   var liste = listeEspeces(sel, mois);
   var htmlSp;
   if (!liste.length){
@@ -1412,7 +1524,8 @@ function dessine(){
     '<dt>Sur le terrain</dt><dd>' + z.tip + '</dd></dl>' +
     '<h3>Ce qu\u2019on peut y trouver en ' + MOIS[mois] + '</h3>' + htmlSp +
     '<p class="meter">Indice du secteur <b>' + v.toFixed(1) + '</b> sur 10. ' + ligne + '.</p>' +
-    '<p style="margin:0"><a class="aller" href="' + nav.href + '"' +
+    htmlFen +
+    '<p style="margin:14px 0 0"><a class="aller" href="' + nav.href + '"' +
     (nav.ext ? ' target="_blank" rel="noopener"' : '') +
     '>➜ Y aller</a></p>';
 
@@ -1524,12 +1637,13 @@ function charge(force){
       var t = l.daily.time, p = l.daily.precipitation_sum;
       var pivot = t.indexOf(cle);
       if (pivot < 0) pivot = 15;
-      var passe = 0, avenir = 0;
+      var jours = [], passe = 0, avenir = 0;
       for (var i = 0; i < t.length; i++){
         var val = (typeof p[i] === "number") ? p[i] : 0;
+        jours.push(val);
         if (i < pivot) passe += val; else avenir += val;
       }
-      return { passe: passe, avenir: avenir };
+      return { passe: passe, avenir: avenir, jours: jours, pivot: pivot };
     });
     var t0 = lots[0].daily.time;
     var pv = t0.indexOf(cle); if (pv < 0) pv = 15;
