@@ -139,6 +139,14 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .trouv button{font:inherit;font-size:13px;background:none;border:none;color:var(--ink-3);cursor:pointer;padding:0}
 .trouv button:hover{color:var(--warn)}
 .deja{font-size:12px;font-weight:600;color:var(--moss);white-space:nowrap}
+.compte{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:16px 18px;margin:0 0 16px}
+.compte[hidden]{display:none}
+.compte h3{font-size:14px;font-weight:600;color:var(--ink);margin:0 0 4px}
+.compte p{font-size:13px;color:var(--ink-2);margin:0 0 12px}
+.compte input{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line-2);border-radius:3px;padding:8px 10px;margin:0 0 10px}
+.etat{font-size:13px;margin:12px 0 0}
+.etat.ok{color:var(--moss)}
+.etat.ko{color:var(--warn)}
 
 .planche{margin:34px 0 0;padding-top:22px;border-top:1px solid var(--line)}
 .planche h2{font-size:20px;margin-bottom:6px}
@@ -289,6 +297,26 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
     </div>
   </div>
 
+  <div class="compte" id="compte" hidden>
+    <h3 id="compteTitre">Sauvegarde en ligne</h3>
+    <p id="compteTexte">Crée un compte pour retrouver ton carnet sur n’importe quel appareil, même après un effacement du navigateur.</p>
+    <div id="compteForm">
+      <input type="email" id="mail" placeholder="adresse e-mail" autocomplete="email">
+      <input type="password" id="mdp" placeholder="mot de passe (6 caractères minimum)" autocomplete="current-password">
+      <div class="actions">
+        <button type="button" class="btn" id="connexion">Se connecter</button>
+        <button type="button" class="btn sec" id="inscription">Créer un compte</button>
+      </div>
+    </div>
+    <div id="compteConnecte" hidden>
+      <div class="actions">
+        <button type="button" class="btn" id="synchro">Synchroniser maintenant</button>
+        <button type="button" class="btn sec" id="deconnexion">Se déconnecter</button>
+      </div>
+    </div>
+    <p class="etat" id="compteEtat"></p>
+  </div>
+
   <ul class="trouv" id="listeTrouv"></ul>
 </section>
 
@@ -353,7 +381,7 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
   <p><strong>Cette carte ne détermine rien.</strong> Les mentions de confusion signalent les sosies dangereux les plus fréquents, elles ne remplacent pas une identification. Fais valider ta cueillette par un pharmacien avant de manger quoi que ce soit.</p>
   <p>Les poussées arrivent huit à quinze jours après la pluie : un cumul qui vient de monter annonce une sortie à venir, pas une sortie du jour.</p>
   <p>Le bouton « Y aller » vise le centre du secteur, pas un parking : il te met sur la bonne route, à toi de trouver l'accès. Il passe la main à l'application de navigation installée sur ton téléphone.</p>
-  <p><strong>Ton carnet vit dans le navigateur.</strong> Effacer les données du site l’effacerait aussi. Exporte-le de temps en temps : le fichier obtenu se réimporte tel quel, y compris sur un autre appareil.</p>
+  <p><strong>Ton carnet vit dans le navigateur</strong>, sauf si tu actives la sauvegarde en ligne. Effacer les données du site l’effacerait aussi. Exporte-le de temps en temps : le fichier obtenu se réimporte tel quel, y compris sur un autre appareil.</p>
   <p>La géolocalisation reste dans ton navigateur : rien n'est envoyé nulle part, aucune position n'est enregistrée.</p>
   <p>En forêt privée, la cueillette demande l'accord du propriétaire. La réserve biologique de Chizé est fermée à la cueillette.</p>
   <p class="credit">Pluviométrie : <a href="https://open-meteo.com/">Open-Meteo</a>, relevé par secteur. Fonds de carte et BD Forêt® V2 : <a href="https://geoservices.ign.fr/">IGN / Géoplateforme</a>, Licence ouverte. Les pastilles marquent un secteur, pas une parcelle précise.</p>
@@ -541,6 +569,19 @@ var NIV_SP = ["nulle","faible","possible","bonne","forte"];
 
 var CACHE_KEY = "champi-pluie-v3";
 var CARNET_KEY = "champi-carnet-v1";
+var SESSION_KEY = "champi-session-v1";
+
+/* ------------------------------------------------------------------
+   SAUVEGARDE EN LIGNE — à remplir avec ton propre projet Firebase.
+   Ces deux valeurs sont publiques par nature : ce sont des identifiants
+   de projet, pas des secrets. Ce qui protège les données, ce sont les
+   règles de sécurité Firestore. Laisse les guillemets vides pour
+   désactiver la fonction : le carnet continue de marcher en local.
+   ------------------------------------------------------------------ */
+var FIREBASE = {
+  apiKey: "AIzaSyBNytKDFyqcpXJXdrTWi3ZxCGBnD86FIms",
+  projectId: "champignons-80023"
+};
 var CACHE_MS = 3 * 60 * 60 * 1000;
 
 var elChips = document.getElementById("chips");
@@ -1088,6 +1129,146 @@ function chargeParcelles(reessai){
   });
 }
 
+/* ---- Sauvegarde en ligne (API REST, sans SDK) ---- */
+
+var session = null;
+
+function litSession(){
+  try { session = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch(e){ session = null; }
+}
+function ecritSession(){
+  if (session) localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  else localStorage.removeItem(SESSION_KEY);
+}
+
+function etatCompte(txt, ok){
+  var e = document.getElementById("compteEtat");
+  if (!e) return;
+  e.textContent = txt || "";
+  e.className = "etat" + (ok === true ? " ok" : ok === false ? " ko" : "");
+}
+
+function majVueCompte(){
+  var boite = document.getElementById("compte");
+  if (!boite) return;
+  boite.hidden = !FIREBASE.apiKey || !FIREBASE.projectId;
+  document.getElementById("compteForm").hidden = !!session;
+  document.getElementById("compteConnecte").hidden = !session;
+  document.getElementById("compteTexte").textContent = session
+    ? "Connecte\u0301 en tant que " + session.mail + "."
+    : "Cre\u0301e un compte pour retrouver ton carnet sur n\u2019importe quel appareil, me\u0302me apre\u0300s un effacement du navigateur.";
+}
+
+/* Authentification par e-mail et mot de passe. */
+function fbAuth(action, mail, mdp){
+  var url = "https://identitytoolkit.googleapis.com/v1/accounts:" + action + "?key=" + FIREBASE.apiKey;
+  return fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: mail, password: mdp, returnSecureToken: true })
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if (j.error) throw new Error(traduitErreur(j.error.message));
+    session = { uid: j.localId, mail: mail, jeton: j.idToken, refresh: j.refreshToken, exp: Date.now() + 3300000 };
+    ecritSession();
+    return session;
+  });
+}
+
+function traduitErreur(code){
+  var t = {
+    EMAIL_EXISTS: "cette adresse a de\u0301ja\u0300 un compte",
+    EMAIL_NOT_FOUND: "adresse inconnue",
+    INVALID_PASSWORD: "mot de passe incorrect",
+    INVALID_LOGIN_CREDENTIALS: "identifiants incorrects",
+    WEAK_PASSWORD: "mot de passe trop court, six caracte\u0300res minimum",
+    INVALID_EMAIL: "adresse e-mail invalide"
+  };
+  for (var k in t) if (code.indexOf(k) === 0) return t[k];
+  return code;
+}
+
+/* Le jeton ne vit qu'une heure : on le renouvelle avant chaque e\u0301change. */
+function jetonValide(){
+  if (!session) return Promise.reject(new Error("non connecte\u0301"));
+  if (Date.now() < session.exp) return Promise.resolve(session.jeton);
+  return fetch("https://securetoken.googleapis.com/v1/token?key=" + FIREBASE.apiKey, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(session.refresh)
+  }).then(function(r){ return r.json(); }).then(function(j){
+    if (j.error) throw new Error("session expire\u0301e, reconnecte-toi");
+    session.jeton = j.id_token;
+    session.refresh = j.refresh_token;
+    session.exp = Date.now() + 3300000;
+    ecritSession();
+    return session.jeton;
+  });
+}
+
+function urlDoc(){
+  return "https://firestore.googleapis.com/v1/projects/" + FIREBASE.projectId +
+         "/databases/(default)/documents/carnets/" + session.uid;
+}
+
+function fbLire(){
+  return jetonValide().then(function(j){
+    return fetch(urlDoc(), { headers: { Authorization: "Bearer " + j } });
+  }).then(function(r){
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error("lecture refuse\u0301e (" + r.status + ")");
+    return r.json();
+  }).then(function(doc){
+    if (!doc || !doc.fields || !doc.fields.donnees) return [];
+    try { return JSON.parse(doc.fields.donnees.stringValue) || []; } catch(e){ return []; }
+  });
+}
+
+function fbEcrire(liste){
+  return jetonValide().then(function(j){
+    return fetch(urlDoc(), {
+      method: "PATCH",
+      headers: { Authorization: "Bearer " + j, "Content-Type": "application/json" },
+      body: JSON.stringify({ fields: {
+        donnees: { stringValue: JSON.stringify(liste) },
+        maj: { integerValue: String(Date.now()) }
+      }})
+    });
+  }).then(function(r){
+    if (!r.ok) throw new Error("e\u0301criture refuse\u0301e (" + r.status + ")");
+  });
+}
+
+/* Fusion dans les deux sens : rien n'est jamais e\u0301crase\u0301, ni ici ni la\u0300-bas. */
+function fusionne(a, b){
+  var out = a.slice();
+  b.forEach(function(n){
+    var vu = out.some(function(c){
+      return c.k === n.k && Math.abs(c.t - n.t) < 60000 &&
+             Math.abs(c.lat - n.lat) < 0.0002 && Math.abs(c.lon - n.lon) < 0.0002;
+    });
+    if (!vu && typeof n.k === "number" && n.lat && n.lon) out.push(n);
+  });
+  return out;
+}
+
+function synchronise(){
+  if (!session) return Promise.resolve();
+  etatCompte("Synchronisation\u2026");
+  return fbLire().then(function(distant){
+    var avant = carnet.length;
+    carnet = fusionne(carnet, distant || []);
+    ecritCarnet();
+    return fbEcrire(carnet).then(function(){
+      majListeCarnet(); majCarnetCarte(); dessine();
+      var n = carnet.length, s2 = n > 1 ? "s" : "";
+      etatCompte(n + " trouvaille" + s2 + " synchronise\u0301e" + s2 +
+                 (n > avant ? ", dont " + (n - avant) + " re\u0301cupe\u0301re\u0301e(s) en ligne" : "") + ".", true);
+    });
+  }).catch(function(err){
+    etatCompte("E\u0301chec : " + err.message, false);
+  });
+}
+
 function dateCourte(t){
   var d = new Date(t);
   var m = ["janv.","févr.","mars","avril","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
@@ -1131,7 +1312,9 @@ function majListeCarnet(){
     (function(el){
       el.addEventListener("click", function(){
         carnet.splice(+el.dataset.i, 1);
-        ecritCarnet(); majListeCarnet(); majCarnetCarte(); dessine();
+        ecritCarnet();
+        if (session) fbEcrire(carnet).catch(function(){});
+        majListeCarnet(); majCarnetCarte(); dessine();
       });
     })(b[i]);
   }
@@ -1404,6 +1587,7 @@ document.getElementById("validerNote").addEventListener("click", function(){
     note: document.getElementById("noteTxt").value.trim().slice(0, 120)
   });
   ecritCarnet();
+  if (session) fbEcrire(carnet).catch(function(){});
   document.getElementById("noteTxt").value = "";
   formNote.hidden = true;
   majListeCarnet(); majCarnetCarte(); dessine();
@@ -1447,6 +1631,38 @@ document.getElementById("fichier").addEventListener("change", function(e){
 });
 
 majListeCarnet();
+
+litSession();
+majVueCompte();
+if (session) synchronise();
+
+document.getElementById("connexion").addEventListener("click", function(){
+  var m = document.getElementById("mail").value.trim();
+  var p = document.getElementById("mdp").value;
+  etatCompte("Connexion\u2026");
+  fbAuth("signInWithPassword", m, p)
+    .then(function(){ document.getElementById("mdp").value = ""; majVueCompte(); return synchronise(); })
+    .catch(function(e){ etatCompte("\u00c9chec : " + e.message, false); });
+});
+
+document.getElementById("inscription").addEventListener("click", function(){
+  var m = document.getElementById("mail").value.trim();
+  var p = document.getElementById("mdp").value;
+  etatCompte("Cr\u00e9ation du compte\u2026");
+  fbAuth("signUp", m, p)
+    .then(function(){ document.getElementById("mdp").value = ""; majVueCompte(); return synchronise(); })
+    .catch(function(e){ etatCompte("\u00c9chec : " + e.message, false); });
+});
+
+document.getElementById("synchro").addEventListener("click", synchronise);
+
+document.getElementById("deconnexion").addEventListener("click", function(){
+  session = null;
+  ecritSession();
+  majVueCompte();
+  etatCompte("D\u00e9connect\u00e9. Le carnet reste sur cet appareil.");
+});
+
 
 
 for (var m = 0; m < 12; m++){
