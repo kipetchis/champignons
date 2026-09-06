@@ -119,6 +119,21 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
 .sp details[open] .sp-nom::after{content:" ⌄"}
 .sp-det{padding:10px 0 2px}
 .sp-photo{margin:0 0 10px;min-height:4px}
+.sp-sil{float:right;width:74px;height:88px;margin:0 0 6px 12px;color:var(--ink-2)}
+.sp-sil svg{width:100%;height:100%}
+
+.planche{margin:34px 0 0;padding-top:22px;border-top:1px solid var(--line)}
+.planche h2{font-size:20px;margin-bottom:6px}
+.planche p{font-size:14px;color:var(--ink-2);margin:0 0 14px;max-width:60ch}
+.fig{width:100%;max-width:430px;color:var(--ink-2);display:block;margin:0 auto}
+.fig text{font-family:var(--sans);font-size:9px;fill:var(--ink-3)}
+.fig .org{fill:var(--card);stroke:var(--ink-2);stroke-width:1.4;stroke-linejoin:round}
+.fig .tr{fill:none;stroke:var(--ink-2);stroke-width:1}
+.fig .fin{fill:none;stroke:var(--ink-3);stroke-width:.8}
+.fig .amorce{stroke:var(--line-2);stroke-width:.8;fill:none}
+.dessous{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 0;text-align:center}
+.dessous svg{width:100%;color:var(--ink-2)}
+.dessous span{font-size:12px;color:var(--ink-3);display:block;margin-top:2px}
 .sp-photo img{width:100%;max-width:280px;border-radius:4px;display:block;background:var(--surface-2, var(--line))}
 .sp-credit{font-size:12px;color:var(--ink-3);margin:4px 0 0}
 .sp-credit a{color:inherit}
@@ -233,6 +248,61 @@ input[type=range]{flex:1;accent-color:var(--moss);min-width:120px}
   <ol id="rank"></ol>
 </section>
 
+<section class="planche">
+  <h2>Anatomie et vocabulaire</h2>
+  <p>Les mots employés dans les fiches ci-dessus. La volve et la base du pied sont les parties les plus souvent oubliées : ce sont pourtant celles qui trahissent les amanites, il faut donc déterrer le champignon entier plutôt que le couper.</p>
+
+  <svg class="fig" viewBox="0 0 430 210" role="img" aria-label="Coupe d'un champignon avec ses parties nommées">
+    <path class="org" d="M112 78 C112 34 218 34 218 78 Z"/>
+    <path class="tr" d="M112 78 h106"/>
+    <path class="fin" d="M122 79 v12 M132 79 v15 M142 79 v16 M152 79 v16 M178 79 v16 M188 79 v16 M198 79 v15 M208 79 v12"/>
+    <path class="org" d="M156 79 c-5 28 -7 56 -3 83 h24 c4 -27 2 -55 -3 -83 z"/>
+    <path class="org" d="M148 104 h34 l-6 10 h-22 z"/>
+    <path class="org" d="M147 156 c-7 17 4 28 18 28 c14 0 25 -11 18 -28 c-9 6 -27 6 -36 0 z"/>
+    <path class="fin" d="M60 186 h310"/>
+    <path class="fin" d="M112 187 c12 5 20 9 26 15 M132 188 c6 6 8 11 9 17 M196 188 c-4 7 -5 12 -5 18 M214 187 c-9 6 -15 11 -19 17 M150 190 c-2 6 -2 10 -1 15 M182 190 c2 6 2 10 1 15"/>
+
+    <path class="amorce" d="M160 44 h-52"/><text x="46" y="47">chapeau</text>
+    <path class="amorce" d="M114 66 h-30"/><text x="30" y="69">marge</text>
+    <path class="amorce" d="M137 88 h-45"/><text x="34" y="91">lames</text>
+    <path class="amorce" d="M182 109 h42"/><text x="228" y="112">anneau</text>
+    <path class="amorce" d="M179 138 h45"/><text x="228" y="141">pied</text>
+    <path class="amorce" d="M185 172 h39"/><text x="228" y="175">volve</text>
+    <path class="amorce" d="M138 199 h-40"/><text x="34" y="202">mycélium</text>
+  </svg>
+
+  <p style="margin-top:22px">Le dessous du chapeau est le premier caractère à regarder. Quatre familles de dessous, quatre groupes de champignons.</p>
+
+  <div class="dessous">
+    <div>
+      <svg viewBox="0 0 70 52" role="img" aria-label="Lames">
+        <path class="org" d="M6 22 C6 6 64 6 64 22 Z"/>
+        <path class="fin" d="M10 23v9 M17 23v12 M24 23v14 M31 23v15 M39 23v15 M46 23v14 M53 23v12 M60 23v9"/>
+      </svg><span>Lames</span>
+    </div>
+    <div>
+      <svg viewBox="0 0 70 52" role="img" aria-label="Tubes">
+        <path class="org" d="M6 22 C6 6 64 6 64 22 Z"/>
+        <path class="org" d="M8 22 h54 c-2 12 -6 16 -27 16 c-21 0 -25 -4 -27 -16 z"/>
+        <path class="fin" d="M14 24v10 M20 24v12 M26 24v12 M33 24v13 M40 24v13 M47 24v12 M54 24v10"/>
+      </svg><span>Tubes</span>
+    </div>
+    <div>
+      <svg viewBox="0 0 70 52" role="img" aria-label="Plis">
+        <path class="org" d="M8 22 C10 6 60 6 62 22 Z"/>
+        <path class="tr" d="M18 23 C17 32 21 40 26 46 M35 23 v24 M52 23 C53 32 49 40 44 46"/>
+        <path class="fin" d="M26 24 C26 33 29 40 32 45 M44 24 C44 33 41 40 38 45"/>
+      </svg><span>Plis</span>
+    </div>
+    <div>
+      <svg viewBox="0 0 70 52" role="img" aria-label="Aiguillons">
+        <path class="org" d="M6 22 C6 6 64 6 64 22 Z"/>
+        <path class="tr" d="M10 23 l3 10 3 -10 M18 23 l3 13 3 -13 M27 23 l3 15 3 -15 M36 23 l3 15 3 -15 M45 23 l3 13 3 -13 M54 23 l3 10 3 -10"/>
+      </svg><span>Aiguillons</span>
+    </div>
+  </div>
+</section>
+
 <section class="note">
   <h2>À lire avant de partir</h2>
   <p><strong>Aucune identification automatique ici, et c’est volontaire.</strong> L’ANSES demande de ne pas consommer un champignon identifié par une application de reconnaissance photo : les tests du centre antipoison de Paris montrent plus de 50 % d’erreurs d’espèce. Les caractères décisifs, volve enterrée, couleur du lait, texture des lames, odeur, ne se voient pas sur une photo. Les fiches ci-dessus servent à vérifier toi-même, pas à conclure à ta place.</p>
@@ -329,64 +399,64 @@ var Z = [
 // sais : présence relative mois par mois, de janvier à décembre.
 // bes : exigence en eau. 1 = standard, en dessous = se contente de peu.
 var SP = [
-{n:"Cèpe de Bordeaux",cle:"Dessous à tubes serrés, blancs puis jaune-vert, jamais de lames. Pied ventru couvert d’un fin réseau blanc en relief. Chair blanche qui ne change pas à la coupe, saveur douce.",h:{chene:.9,chataignier:1,hetre:1,pin:.9,bouleau:.8,feuillu:.7,conifere:.7},lat:"Boletus edulis",aff:"2333000333201",bes:1.1,
+{n:"Cèpe de Bordeaux",sil:"bolet",cle:"Dessous à tubes serrés, blancs puis jaune-vert, jamais de lames. Pied ventru couvert d’un fin réseau blanc en relief. Chair blanche qui ne change pas à la coupe, saveur douce.",h:{chene:.9,chataignier:1,hetre:1,pin:.9,bouleau:.8,feuillu:.7,conifere:.7},lat:"Boletus edulis",aff:"2333000333201",bes:1.1,
  sais:[0,0,0,0,.05,.30,.35,.50,.85,1,.60,.10],
  conf:"Le bolet de fiel, amer et non toxique, lui ressemble beaucoup : goûte une miette crue avant de remplir le panier."},
-{n:"Cèpe bronzé",cle:"Chapeau brun très foncé, presque noir, souvent craquelé par temps sec. Réseau clair sur le pied. Chair blanche ferme et immuable.",h:{chene:1,chataignier:.7,hetre:.6,feuillu:.6},lat:"Boletus aereus",aff:"3112001223302",bes:1.0,
+{n:"Cèpe bronzé",sil:"bolet",cle:"Chapeau brun très foncé, presque noir, souvent craquelé par temps sec. Réseau clair sur le pied. Chair blanche ferme et immuable.",h:{chene:1,chataignier:.7,hetre:.6,feuillu:.6},lat:"Boletus aereus",aff:"3112001223302",bes:1.0,
  sais:[0,0,0,0,.10,.50,.60,.80,.90,.70,.20,0],
  conf:""},
-{n:"Bolet bai",cle:"Chapeau brun bai velouté. Tubes jaunes qui bleuissent nettement au toucher : c’est normal chez lui. Pied sans réseau.",h:{pin:1,conifere:.9,chene:.8,chataignier:.8,hetre:.8,feuillu:.6},lat:"Imleria badia",aff:"1323000332100",bes:1.0,
+{n:"Bolet bai",sil:"bolet",cle:"Chapeau brun bai velouté. Tubes jaunes qui bleuissent nettement au toucher : c’est normal chez lui. Pied sans réseau.",h:{pin:1,conifere:.9,chene:.8,chataignier:.8,hetre:.8,feuillu:.6},lat:"Imleria badia",aff:"1323000332100",bes:1.0,
  sais:[0,0,0,0,0,.20,.30,.50,.80,1,.70,.15],
  conf:""},
-{n:"Girolle",cle:"Jaune d’œuf uniforme, chair comprise. Dessous à plis épais et fourchus qui descendent sur le pied, jamais de lames fines et libres. Odeur d’abricot. Se déchire en fibres.",h:{hetre:1,chene:.9,chataignier:.9,bouleau:.8,pin:.7,feuillu:.7,conifere:.6},lat:"Cantharellus cibarius",aff:"1333000332100",bes:1.2,
+{n:"Girolle",sil:"girolle",cle:"Jaune d’œuf uniforme, chair comprise. Dessous à plis épais et fourchus qui descendent sur le pied, jamais de lames fines et libres. Odeur d’abricot. Se déchire en fibres.",h:{hetre:1,chene:.9,chataignier:.9,bouleau:.8,pin:.7,feuillu:.7,conifere:.6},lat:"Cantharellus cibarius",aff:"1333000332100",bes:1.2,
  sais:[0,0,0,0,.05,.50,.60,.70,.90,1,.50,.05],
  conf:"La fausse girolle et surtout le clitocybe de l'olivier, toxique, ont des lames vraies au lieu de plis."},
-{n:"Chanterelle en tube",cle:"Chapeau brun-gris perforé au centre, pied jaune vif et creux. Plis espacés gris. Pousse en troupes serrées dans la mousse.",h:{pin:1,conifere:1,hetre:.8,chene:.6,feuillu:.6},lat:"Craterellus tubaeformis",aff:"1323000332100",bes:1.0,
+{n:"Chanterelle en tube",sil:"girolle",cle:"Chapeau brun-gris perforé au centre, pied jaune vif et creux. Plis espacés gris. Pousse en troupes serrées dans la mousse.",h:{pin:1,conifere:1,hetre:.8,chene:.6,feuillu:.6},lat:"Craterellus tubaeformis",aff:"1323000332100",bes:1.0,
  sais:[.10,.05,0,0,0,0,0,.10,.40,.90,1,.60],
  conf:""},
-{n:"Trompette de la mort",cle:"Entièrement gris-noir, creuse du chapeau jusqu’à la base, en forme de cornet. Surface externe lisse à ridée, sans lames. Aucun sosie dangereux.",h:{hetre:1,chene:.9,feuillu:.7,chataignier:.6},lat:"Craterellus cornucopioides",aff:"3213000333201",bes:1.1,
+{n:"Trompette de la mort",sil:"trompette",cle:"Entièrement gris-noir, creuse du chapeau jusqu’à la base, en forme de cornet. Surface externe lisse à ridée, sans lames. Aucun sosie dangereux.",h:{hetre:1,chene:.9,feuillu:.7,chataignier:.6},lat:"Craterellus cornucopioides",aff:"3213000333201",bes:1.1,
  sais:[0,0,0,0,0,0,.05,.20,.60,1,.90,.30],
  conf:""},
-{n:"Pied de mouton",cle:"Dessous couvert d’aiguillons mous qui se détachent sous le doigt, ni lames ni tubes. Chair cassante, pied souvent décentré.",h:{hetre:.9,chene:.9,conifere:.8,pin:.8,chataignier:.7,feuillu:.7},lat:"Hydnum repandum",aff:"2323000323201",bes:1.0,
+{n:"Pied de mouton",sil:"hydne",cle:"Dessous couvert d’aiguillons mous qui se détachent sous le doigt, ni lames ni tubes. Chair cassante, pied souvent décentré.",h:{hetre:.9,chene:.9,conifere:.8,pin:.8,chataignier:.7,feuillu:.7},lat:"Hydnum repandum",aff:"2323000323201",bes:1.0,
  sais:[0,0,0,0,0,.05,.10,.30,.70,1,.90,.35],
  conf:""},
-{n:"Lactaire délicieux",cle:"Toujours sous pins. Chapeau orangé zoné, se tachant de vert avec l’âge. Le lait est orange carotte à la coupe : un lait blanc signe une autre espèce, âcre.",h:{pin:1,conifere:.9},lat:"Lactarius deliciosus",aff:"0102000331102",bes:0.9,
+{n:"Lactaire délicieux",sil:"lactaire",cle:"Toujours sous pins. Chapeau orangé zoné, se tachant de vert avec l’âge. Le lait est orange carotte à la coupe : un lait blanc signe une autre espèce, âcre.",h:{pin:1,conifere:.9},lat:"Lactarius deliciosus",aff:"0102000331102",bes:0.9,
  sais:[0,0,0,0,0,.05,.15,.40,.80,1,.70,.20],
  conf:""},
-{n:"Russule charbonnière",cle:"Lames blanches souples et grasses au toucher, qui plient sans se casser. C’est le critère qui la sépare des autres russules. Chair douce, jamais piquante.",h:{chene:1,hetre:.9,chataignier:.9,feuillu:.8,pin:.5,conifere:.5},lat:"Russula cyanoxantha",aff:"3323001333311",bes:0.9,
+{n:"Russule charbonnière",sil:"russule",cle:"Lames blanches souples et grasses au toucher, qui plient sans se casser. C’est le critère qui la sépare des autres russules. Chair douce, jamais piquante.",h:{chene:1,hetre:.9,chataignier:.9,feuillu:.8,pin:.5,conifere:.5},lat:"Russula cyanoxantha",aff:"3323001333311",bes:0.9,
  sais:[0,0,0,0,.20,.60,.60,.70,.90,1,.40,.05],
  conf:"Une russule verdâtre se confond avec l'amanite phalloïde : vérifie l'absence de volve et d'anneau."},
-{n:"Coulemelle",cle:"Grande, chapeau en parasol couvert de larges mèches brunes. Anneau double qui coulisse le long du pied. Pied chiné comme une peau de serpent, bulbeux à la base.",h:{herbace:1,lande:.9,ouvert:.9,chene:.6,feuillu:.6,conifere:.5},lat:"Macrolepiota procera",aff:"2332313222313",bes:0.8,
+{n:"Coulemelle",sil:"coulemelle",cle:"Grande, chapeau en parasol couvert de larges mèches brunes. Anneau double qui coulisse le long du pied. Pied chiné comme une peau de serpent, bulbeux à la base.",h:{herbace:1,lande:.9,ouvert:.9,chene:.6,feuillu:.6,conifere:.5},lat:"Macrolepiota procera",aff:"2332313222313",bes:0.8,
  sais:[0,0,0,0,.05,.20,.35,.60,.95,1,.50,.05],
  conf:"Ne ramasse que les grands exemplaires à anneau coulissant : les petites lépiotes brunes sont mortelles."},
-{n:"Rosé des prés",cle:"Lames roses vif devenant brun chocolat, jamais blanches. Chapeau blanc soyeux. Aucune volve à la base du pied.",h:{herbace:1},lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
+{n:"Rosé des prés",sil:"agaric",cle:"Lames roses vif devenant brun chocolat, jamais blanches. Chapeau blanc soyeux. Aucune volve à la base du pied.",h:{herbace:1},lat:"Agaricus campestris",aff:"0231323011123",bes:0.7,
  sais:[0,0,0,.10,.40,.50,.40,.50,.90,1,.40,.05],
  conf:"Lames roses puis brunes, jamais blanches : des lames restées blanches signent une amanite."},
-{n:"Marasme des Oréades",cle:"Petit, en ronds dans l’herbe rase. Lames espacées et crème. Pied grêle si coriace qu’il ne casse pas net. Odeur d’amande.",h:{herbace:1},lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
+{n:"Marasme des Oréades",sil:"agaric",cle:"Petit, en ronds dans l’herbe rase. Lames espacées et crème. Pied grêle si coriace qu’il ne casse pas net. Odeur d’amande.",h:{herbace:1},lat:"Marasmius oreades",aff:"0231313011113",bes:0.6,
  sais:[0,0,.05,.30,.70,.80,.60,.60,.90,.90,.30,.05],
  conf:"Pousse en ronds de sorcières avec le clitocybe blanc, très toxique, aux lames serrées et décurrentes."},
-{n:"Coprin chevelu",cle:"Cylindrique et blanc, couvert de mèches retroussées. Lames blanches virant à l’encre noire. À ramasser jeune et fermé.",h:{herbace:.9,ouvert:.8,peuplier:.6,feuillu:.4},lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
+{n:"Coprin chevelu",sil:"coprin",cle:"Cylindrique et blanc, couvert de mèches retroussées. Lames blanches virant à l’encre noire. À ramasser jeune et fermé.",h:{herbace:.9,ouvert:.8,peuplier:.6,feuillu:.4},lat:"Coprinus comatus",aff:"1221232111132",bes:0.6,
  sais:[0,0,.10,.30,.50,.40,.30,.40,.85,1,.70,.20],
  conf:""},
-{n:"Pleurote du panicaut",cle:"Beige, lames décurrentes. Toujours sur les racines du chardon roland, en pleine plaine sèche.",h:{herbace:1},lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
+{n:"Pleurote du panicaut",sil:"agaric",cle:"Beige, lames décurrentes. Toujours sur les racines du chardon roland, en pleine plaine sèche.",h:{herbace:1},lat:"Pleurotus eryngii",aff:"1000303000103",bes:0.8,
  sais:[0,0,0,.20,.50,.40,.20,.30,.70,.90,.50,.10],
  conf:""},
-{n:"Pholiote du peuplier",cle:"En touffes sur souches de peuplier. Chapeau ocre pâle, anneau membraneux blanc, lames brun cannelle.",h:{peuplier:1,feuillu:.4},lat:"Cyclocybe aegerita",aff:"0110131000131",bes:0.7,
+{n:"Pholiote du peuplier",sil:"agaric",cle:"En touffes sur souches de peuplier. Chapeau ocre pâle, anneau membraneux blanc, lames brun cannelle.",h:{peuplier:1,feuillu:.4},lat:"Cyclocybe aegerita",aff:"0110131000131",bes:0.7,
  sais:[.20,.20,.40,.60,.60,.40,.30,.40,.70,.90,.80,.40],
  conf:"Sur souche, la galérine marginée, mortelle, occupe les mêmes bois : ne mélange jamais deux récoltes."},
-{n:"Pleurote en huître",cle:"En consoles étagées sur bois mort de feuillu. Lames blanches très décurrentes sur un pied latéral court.",h:{peuplier:.9,feuillu:.8,hetre:.7,chene:.6},lat:"Pleurotus ostreatus",aff:"2222131222231",bes:0.7,
+{n:"Pleurote en huître",sil:"pleurote",cle:"En consoles étagées sur bois mort de feuillu. Lames blanches très décurrentes sur un pied latéral court.",h:{peuplier:.9,feuillu:.8,hetre:.7,chene:.6},lat:"Pleurotus ostreatus",aff:"2222131222231",bes:0.7,
  sais:[.40,.40,.30,.20,.10,.05,.05,.10,.40,.80,1,.70],
  conf:""},
-{n:"Morille",cle:"Chapeau alvéolé en nid d’abeille, soudé au pied, entièrement creuse quand on la fend dans la longueur.",h:{peuplier:.9,feuillu:.5,ouvert:.5},lat:"Morchella sp.",aff:"1001131001131",bes:0.9,
+{n:"Morille",sil:"morille",cle:"Chapeau alvéolé en nid d’abeille, soudé au pied, entièrement creuse quand on la fend dans la longueur.",h:{peuplier:.9,feuillu:.5,ouvert:.5},lat:"Morchella sp.",aff:"1001131001131",bes:0.9,
  sais:[0,.10,.80,1,.40,0,0,0,0,0,0,0],
  conf:"Toxique crue, et les gyromitres du printemps sont dangereux : cuisson longue obligatoire."},
-{n:"Truffe de Bourgogne",cle:"Souterraine, croûte noire verruqueuse, chair brune finement veinée de blanc, odeur forte.",h:{chene:1,feuillu:.4},lat:"Tuber uncinatum",aff:"1000203001203",bes:1.0,
+{n:"Truffe de Bourgogne",sil:"truffe",cle:"Souterraine, croûte noire verruqueuse, chair brune finement veinée de blanc, odeur forte.",h:{chene:1,feuillu:.4},lat:"Tuber uncinatum",aff:"1000203001203",bes:1.0,
  sais:[.20,0,0,0,0,0,0,0,.50,.80,1,.90],
  conf:""},
-{n:"Clitocybe nébuleux",cle:"Grand, chapeau gris souris pruineux, lames blanchâtres décurrentes, odeur forte et désagréable. Comestible médiocre et souvent mal digéré.",h:{hetre:.9,chene:.8,conifere:.8,pin:.8,feuillu:.8,chataignier:.7},lat:"Clitocybe nebularis",aff:"3212112323312",bes:0.9,
+{n:"Clitocybe nébuleux",sil:"agaric",cle:"Grand, chapeau gris souris pruineux, lames blanchâtres décurrentes, odeur forte et désagréable. Comestible médiocre et souvent mal digéré.",h:{hetre:.9,chene:.8,conifere:.8,pin:.8,feuillu:.8,chataignier:.7},lat:"Clitocybe nebularis",aff:"3212112323312",bes:0.9,
  sais:[0,0,0,0,0,0,0,.10,.50,1,.90,.30],
  conf:"L'entolome livide, très toxique, pousse au même endroit et à la même saison."},
-{n:"Amanite des Césars",cle:"Chapeau orange vif à marge striée, lames et pied jaune d’or, volve blanche en sac à la base. Seule amanite à lames jaunes.",h:{chene:1,chataignier:.9},lat:"Amanita caesarea",aff:"0001000221101",bes:1.0,
+{n:"Amanite des Césars",sil:"amanite",cle:"Chapeau orange vif à marge striée, lames et pied jaune d’or, volve blanche en sac à la base. Seule amanite à lames jaunes.",h:{chene:1,chataignier:.9},lat:"Amanita caesarea",aff:"0001000221101",bes:1.0,
  sais:[0,0,0,0,0,.30,.60,.90,.80,.40,0,0],
  conf:"Jeune, en œuf, elle est indiscernable d'une amanite tue-mouches ou phalloïde sans ouvrir le voile."}
 ];
@@ -521,6 +591,22 @@ function puces(){
   }
   elToutes.hidden = (choix.length === 0);
 }
+
+var SILH = {
+bolet: '<path class="org" d="M14 44 C14 20 86 20 86 44 Z"/><path class="tr" d="M16 44h68"/><path class="fin" d="M22 45v7 M30 45v8 M38 45v8 M50 45v8 M62 45v8 M70 45v8 M78 45v7"/><path class="org" d="M40 52 C34 68 28 88 33 104 h34 c5-16 -1-36 -7-52 z"/><path class="fin" d="M42 62 h16 M40 74 h20 M38 86 h24"/>',
+girolle: '<path class="org" d="M20 40 C26 26 74 26 80 40 C70 38 62 46 58 58 L55 100 45 100 42 58 C38 46 30 38 20 40 Z"/><path class="tr" d="M32 42 C34 56 40 70 46 96 M50 40 v56 M68 42 C66 56 60 70 54 96"/>',
+trompette: '<path class="org" d="M24 32 C32 22 68 22 76 32 C66 38 58 50 55 64 L52 104 48 104 45 64 C42 50 34 38 24 32 Z"/><path class="fin" d="M32 33 C40 28 60 28 68 33"/>',
+hydne: '<path class="org" d="M18 46 C18 22 82 22 82 46 Z"/><path class="tr" d="M24 46l3 12 3-12 M34 46l3 14 3-14 M46 46l3 15 3-15 M58 46l3 14 3-14 M68 46l3 12 3-12"/><path class="org" d="M42 56 C38 74 36 92 40 104 h20 c4-12 2-30 -2-48 z"/>',
+lactaire: '<path class="org" d="M16 46 C16 22 84 22 84 46 Z"/><path class="fin" d="M34 29 C42 35 58 35 66 29 M22 38 C36 33 64 33 78 38"/><path class="fin" d="M26 47v8 M36 47v9 M50 47v9 M64 47v9 M74 47v8"/><path class="org" d="M44 56 C41 74 41 92 44 104 h12 c3-12 3-30 0-48 z"/><circle class="tr" cx="30" cy="62" r="3"/>',
+russule: '<path class="org" d="M16 44 C16 20 84 20 84 44 Z"/><path class="fin" d="M22 45v9 M32 45v11 M42 45v12 M58 45v12 M68 45v11 M78 45v9"/><path class="org" d="M43 54 v50 h14 v-50 z"/>',
+coulemelle: '<path class="org" d="M14 42 C14 16 86 16 86 42 Z"/><path class="tr" d="M28 30l4 5 M44 24l4 6 M60 26l4 6 M36 38l4 5 M56 38l4 5 M70 36l4 5"/><path class="fin" d="M20 43v8 M34 43v9 M50 43v9 M66 43v9 M80 43v8"/><path class="org" d="M45 52 v50 h10 v-50 z"/><path class="org" d="M35 60 h30 l-5 8 h-20 z"/><path class="org" d="M40 100 c-4 8 4 12 10 12 c6 0 14-4 10-12 z"/>',
+agaric: '<path class="org" d="M18 46 C18 24 82 24 82 46 Z"/><path class="fin" d="M24 47v9 M34 47v11 M46 47v12 M58 47v11 M70 47v9"/><path class="org" d="M43 56 v48 h14 v-48 z"/><path class="org" d="M34 64 h32 l-5 8 h-22 z"/>',
+coprin: '<path class="org" d="M36 16 C30 16 28 24 28 40 C28 62 32 74 50 74 C68 74 72 62 72 40 C72 24 70 16 64 16 C58 10 42 10 36 16 Z"/><path class="tr" d="M34 26l5 6 M60 26l5 6 M32 40l5 6 M62 40l5 6 M38 54l5 6 M56 54l5 6"/><path class="org" d="M46 74 v30 h8 v-30 z"/>',
+pleurote: '<path class="tr" d="M18 8 v98"/><path class="fin" d="M12 8 v98"/><path class="org" d="M18 40 C34 30 66 32 82 44 C64 54 34 54 18 48 Z"/><path class="org" d="M18 66 C32 58 58 60 72 70 C56 78 32 78 18 74 Z"/><path class="fin" d="M28 47 L34 43 M42 50 L50 44 M56 51 L66 45"/>',
+morille: '<path class="org" d="M50 12 C30 12 26 34 28 54 C30 72 38 80 50 80 C62 80 70 72 72 54 C74 34 70 12 50 12 Z"/><path class="fin" d="M32 28 h36 M29 42 h42 M30 56 h40 M34 68 h32 M40 14 v64 M50 12 v68 M60 14 v64"/><path class="org" d="M42 80 c-2 12 -2 20 0 24 h16 c2-4 2-12 0-24 z"/>',
+truffe: '<path class="fin" d="M6 34 h88"/><path class="org" d="M50 46 C28 46 20 62 24 78 C28 94 44 102 54 100 C72 96 82 80 78 66 C74 52 64 46 50 46 Z"/><path class="tr" d="M36 60l4 4 M52 54l4 4 M66 66l4 4 M34 80l4 4 M52 84l4 4 M66 82l4 4 M44 70l4 4"/>',
+amanite: '<path class="org" d="M16 44 C16 20 84 20 84 44 Z"/><path class="fin" d="M20 38 v6 M30 33 v11 M42 30 v14 M58 30 v14 M70 33 v11 M80 38 v6"/><path class="org" d="M44 50 v44 h12 v-44 z"/><path class="org" d="M33 56 h34 l-5 8 h-24 z"/><path class="org" d="M36 88 c-6 12 4 18 14 18 c10 0 20-6 14-18 c-8 6 -20 6 -28 0 z"/>'
+};
 
 /* Photos de référence : Wikipédia, licences libres, créditées.
    Rien n'est stocké ici, le service worker garde les images vues. */
@@ -959,6 +1045,7 @@ function dessine(){
              '<span class="sp-lab" style="color:' + col + '">' + NIV_SP[ns] + '</span></div>' +
              '<div class="bar"><i style="width:' + Math.round(o.p * 100) + '%;background:' + col + '"></i></div>' +
              '</summary><div class="sp-det">' +
+             '<div class="sp-sil fig"><svg viewBox="0 0 100 116">' + (SILH[e.sil] || "") + '</svg></div>' +
              '<div class="sp-photo"></div>' +
              '<p class="sp-cle"><b>À vérifier soi-même</b> — ' + e.cle + '</p>' +
              (e.conf ? '<p class="sp-conf">⚠ ' + e.conf + '</p>' : '') +
